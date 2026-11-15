@@ -4,7 +4,7 @@ Jogos para praticar **árvores de busca** em aulas de Estruturas de Dados: árvo
 
 Cada jogo é um arquivo HTML único. Funciona offline e não precisa de instalação: basta abrir no navegador.
 
-**▶ Jogar:** https://jjonatass.github.io/masmorra-das-arvores/
+**▶ Jogar:** https://masmorra-das-arvores-js-j.vercel.app (Vercel) · https://jjonatass.github.io/masmorra-das-arvores/ (GitHub Pages)
 
 ## Os jogos
 
