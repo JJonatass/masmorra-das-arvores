@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Masmorra das Árvores: Era das Árvores de Busca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#16151F; --stone:#23222F; --stone-2:#2E2C3D; --line:#45425A;
+  --ink:#ECE3CF; --muted:#A9A1B8; --torch:#F2A93B; --ember:#E5604A; --moss:#7CC39A;
+  --rb-red:#B4363A; --rb-black:#0C0B12;
+  --display:'IM Fell English SC', Georgia, 'Times New Roman', serif;
+  --body:'Alegreya Sans', 'Trebuchet MS', Verdana, sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;
+  background-image:radial-gradient(1200px 500px at 30% -10%, #2a2440 0%, transparent 60%);background-attachment:fixed}
+button{font-family:var(--body);font-size:16px;cursor:pointer;color:inherit}
+a{color:var(--torch)}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+.wrap{max-width:1400px;margin:0 auto;padding:20px 20px 32px}
+[hidden]{display:none!important}
+
+/* ---------- mapa ---------- */
+.hero{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:22px}
+.hero .era{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--torch);font-weight:700;margin:0}
+.hero h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,52px);line-height:1;margin:6px 0 8px;text-wrap:balance}
+.hero p{margin:0;color:var(--muted);max-width:62ch}
+.total{text-align:right}
+.total b{font-family:var(--display);font-weight:400;font-size:40px;color:var(--torch);display:block;line-height:1}
+.total span{color:var(--muted);font-size:14px}
+.floors{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;position:relative}
+.floors::before{content:"";position:absolute;left:41px;top:30px;bottom:30px;border-left:3px dashed var(--line)}
+.floor{position:relative;display:grid;grid-template-columns:84px 1fr auto;gap:18px;align-items:center;background:var(--stone);border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 0}
+.floor .num{justify-self:center;width:58px;height:58px;border-radius:50%;background:var(--stone-2);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:28px;position:relative;z-index:1}
+.floor.open .num{border-color:var(--torch);color:var(--torch)}
+.floor.done .num{border-color:var(--moss);color:var(--moss)}
+.floor.locked{opacity:.55}
+.floor.boss{border-color:#6b4a2c;background:linear-gradient(90deg,#2b2230,var(--stone))}
+.floor h2{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1.1}
+.floor .struct{color:var(--torch);font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase}
+.floor p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.floor .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.stars{font-size:22px;letter-spacing:2px;color:var(--line);white-space:nowrap}
+.stars .on{color:var(--torch)}
+.btn{background:var(--stone-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 16px;font-weight:500;display:inline-flex;align-items:center;gap:8px;text-decoration:none;line-height:1.2}
+.btn:hover:not(:disabled){border-color:var(--torch)}
+.btn:disabled{cursor:not-allowed;opacity:.6}
+.btn.primary{background:var(--torch);color:#1d1408;border-color:var(--torch);font-weight:700}
+.btn.ghost{background:transparent}
+.btn.small{padding:6px 12px;font-size:14px}
+.theory{font-size:14px}
+.mapfoot{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;margin-top:22px;color:var(--muted);font-size:15px}
+.mapfoot label{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+.mapfoot input{accent-color:var(--torch);width:18px;height:18px}
+
+/* ---------- andar ---------- */
+.fhead{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-bottom:14px}
+.fhead .title{flex:1;min-width:220px}
+.fhead .title small{display:block;color:var(--torch);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase}
+.fhead h1{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1.1}
+.hearts{font-size:26px;letter-spacing:3px;color:var(--ember);white-space:nowrap}
+.hearts .off{color:var(--line)}
+.dots{display:flex;gap:6px;align-items:center}
+.dots i{width:12px;height:12px;border-radius:50%;border:2px solid var(--line);display:block}
+.dots i.cur{border-color:var(--torch);background:var(--torch)}
+.dots i.ok{border-color:var(--moss);background:var(--moss)}
+.dots span{color:var(--muted);font-size:14px;margin-left:6px;font-variant-numeric:tabular-nums}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.board{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dungeon{background:#121119;border:1px solid var(--line);border-radius:12px;overflow:auto;min-height:320px;display:flex;align-items:center;justify-content:center;padding:6px}
+.dungeon svg{display:block;max-width:100%;height:auto}
+.prompt{background:var(--stone);border:1px solid var(--line);border-left:5px solid var(--torch);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.prompt.win{border-left-color:var(--moss)}
+.prompt .tag{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.prompt h2{font-family:var(--display);font-weight:400;font-size:25px;margin:0;line-height:1.15;text-wrap:balance}
+.prompt p{margin:0;max-width:75ch}
+.feedback{font-weight:500;min-height:1.45em}
+.feedback.bad{color:#FFB3A6}
+.feedback.good{color:#B7F0CC}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.opt{flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-width:150px}
+.opt .l{font-weight:700;display:flex;gap:8px;align-items:center}
+.opt .s{font-size:13px;color:var(--muted)}
+.opt kbd,.btn kbd{font-family:var(--body);font-size:12px;border:1px solid currentColor;border-radius:4px;padding:0 5px;opacity:.7;font-weight:500}
+.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--stone);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 8px}
+.rule p{margin:0 0 8px;font-size:15px}
+.rule p:last-child{margin-bottom:0}
+.rule b{color:var(--torch)}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px;max-height:260px;overflow:auto}
+.log li{border-left:3px solid var(--line);padding-left:8px;color:var(--muted)}
+.log li.good{border-color:var(--moss)}
+.log li.bad{border-color:var(--ember)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;border:2px solid var(--line);background:var(--stone);display:inline-block}
+.sw.cur{border-color:var(--torch)}
+.sw.path{background:#3A3122;border-color:#8a6a35}
+.sw.fresh{border-color:var(--moss)}
+.sw.red{background:var(--rb-red);border-color:#F08A86}
+.sw.black{background:var(--rb-black);border-color:#8C87A6}
+
+/* salas no svg */
+.room rect{fill:var(--stone);stroke:var(--line);stroke-width:2}
+.room text{fill:var(--ink);font-family:var(--body);font-weight:700;font-size:16px;text-anchor:middle;dominant-baseline:central;font-variant-numeric:tabular-nums}
+.room.rb-red rect{fill:var(--rb-red);stroke:#F08A86}
+.room.rb-black rect{fill:var(--rb-black);stroke:#8C87A6}
+.room.path rect{fill:#3A3122;stroke:#8a6a35}
+.room.fresh rect{stroke:var(--moss);stroke-width:4}
+.room.cur rect{stroke:var(--torch);stroke-width:4;filter:drop-shadow(0 0 7px rgba(242,169,59,.8))}
+.room.bad rect{stroke:var(--ember);stroke-width:4;stroke-dasharray:6 3}
+.room.click{cursor:pointer}
+.room.click:hover rect{stroke:var(--torch)}
+.room .badge circle{fill:var(--torch);stroke:#121119;stroke-width:2}
+.room .badge text{fill:#1d1408;font-size:12px;font-weight:800}
+.room .bfl{font-size:12px;font-weight:700;fill:var(--muted)}
+.room .bfl.crit{fill:#FFB3A6}
+.edge{stroke:#5B5674;stroke-width:3}
+.slot{cursor:pointer}
+.slot rect{fill:rgba(242,169,59,.06);stroke:var(--torch);stroke-dasharray:5 4;stroke-width:2}
+.slot:hover rect,.slot:focus rect{fill:rgba(242,169,59,.25)}
+.slot.bad rect{stroke:var(--ember);fill:rgba(229,96,74,.25)}
+.slot-edge{stroke:#8a6a35;stroke-width:2;stroke-dasharray:4 4}
+.nil rect{fill:var(--rb-black);stroke:#8C87A6;stroke-width:1.5}
+.nil text{fill:var(--muted);font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central;font-family:var(--body)}
+
+/* banner */
+.veil{position:fixed;inset:0;background:rgba(8,7,12,.72);display:grid;place-items:center;z-index:10;padding:16px}
+.banner{background:var(--stone-2);border:2px solid var(--torch);border-radius:14px;padding:24px 30px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);max-width:520px;width:100%}
+.banner.lost{border-color:var(--ember)}
+.banner h2{font-family:var(--display);font-weight:400;font-size:36px;margin:0 0 6px;color:var(--torch);line-height:1.1}
+.banner.lost h2{color:var(--ember)}
+.banner .stars{font-size:40px;margin:6px 0 10px}
+.banner p{margin:0 0 16px}
+.banner .actions{justify-content:center}
+
+@media (max-width: 960px){ .main{grid-template-columns:1fr} }
+@media (max-width: 600px){
+  .floor{grid-template-columns:60px 1fr;padding:12px 14px 12px 0}
+  .floor .num{width:46px;height:46px;font-size:22px}
+  .floors::before{left:29px}
+  .floor .right{grid-column:2;align-items:flex-start;flex-direction:row;flex-wrap:wrap}
+  .opt{min-width:0;flex:1 1 45%}
+  .total{text-align:left}
+}
+@media (prefers-reduced-motion: reduce){ .shake{animation:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- MAPA -->
+<section id="mapView" aria-labelledby="mapTitle">
+  <header class="hero">
+    <div>
+      <p class="era">Trilha de Estruturas · Era 03</p>
+      <h1 id="mapTitle">A Masmorra das Árvores</h1>
+      <p>Desça os andares da era das árvores de busca. Agora é você quem faz cada jogada: achar a vaga, escolher a rotação, decidir entre recolorir e girar. Cada erro custa uma vida.</p>
+    </div>
+    <div class="total"><b id="totalStars">0 / 15</b><span>estrelas da era</span></div>
+  </header>
+  <ol class="floors" id="floorList"></ol>
+  <div class="mapfoot">
+    <span>Todos os andares estão liberados: comece por qualquer um.</span>
+    <button class="btn ghost small" id="reset">Zerar progresso</button>
+  </div>
+</section>
+
+<!-- ANDAR -->
+<section id="floorView" hidden>
+  <header class="fhead">
+    <button class="btn ghost small" id="back">← Mapa</button>
+    <div class="title"><small id="fNum"></small><h1 id="fName"></h1></div>
+    <div class="dots" id="dots" aria-label="Progresso do andar"></div>
+    <div class="hearts" id="hearts" aria-label="Vidas"></div>
+  </header>
+  <div class="main">
+    <div class="board">
+      <div class="dungeon" id="dungeonBox"><svg id="tree" role="img" aria-label="Árvore do desafio"></svg></div>
+      <div class="prompt" id="prompt" aria-live="polite">
+        <span class="tag" id="pTag"></span>
+        <h2 id="pTitle"></h2>
+        <p id="pText"></p>
+        <p class="feedback" id="pFeedback"></p>
+        <div class="actions" id="actions"></div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="card rule"><h3>Regra do andar</h3><div id="rule"></div></div>
+      <div class="card legend" id="legend"></div>
+      <div class="card"><h3>Diário</h3><ul class="log" id="log"></ul></div>
+    </aside>
+  </div>
+</section>
+
+<div class="veil" id="veil" hidden><div class="banner" id="banner" role="dialog" aria-modal="true" aria-labelledby="bTitle"><h2 id="bTitle"></h2><div class="stars" id="bStars"></div><p id="bText"></p><div class="actions" id="bActions"></div></div></div>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function(){
+'use strict';
+var E = Engine;
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+var FLOORS = [
+  { id:'bst', name:'O Corredor da Busca', struct:'Árvore binária de busca', skill:'Ache a vaga onde cada nova chave deve entrar.', theory:'https://claude.ai/artifact/4mKWJNia8rfSmTXJQpzyY7' },
+  { id:'avl', name:'A Balança do Equilíbrio', struct:'Árvore AVL', skill:'Encontre a sala desequilibrada e escolha a rotação certa.', theory:'https://claude.ai/artifact/CxgQNeHDPwNGX1LhzGL511' },
+  { id:'rb', name:'A Cripta Rubro-Negra', struct:'Árvore rubro-negra', skill:'Depois de cada inserção, decida: nada, recolorir, girar ou pintar a raiz.', theory:'https://claude.ai/artifact/XBGh5AB6UEc6fz3ySTcjXm' },
+  { id:'splay', name:'A Escada Giratória', struct:'Árvore splay', skill:'Leve a sala acessada até a raiz com zig, zig-zig e zig-zag.', theory:'https://claude.ai/artifact/SnuXgHiPg1FpnnPMvzA7dM' },
+  { id:'boss', name:'O Guardião das Raízes', struct:'Chefão · tudo misturado', skill:'Oito desafios seguidos dos quatro andares, com as mesmas três vidas.', boss:true }
+];
+var TYPE_NAME = { bst:'Árvore binária de busca', avl:'Árvore AVL', rb:'Árvore rubro-negra', splay:'Árvore splay' };
+var RULES = {
+  bst: '<p>Compare a nova chave com cada sala, a partir da raiz: <b>menor vai para a esquerda</b>, <b>maior vai para a direita</b>.</p><p>A chave entra na primeira vaga vazia que aparecer no caminho. Nada muda de lugar.</p>',
+  avl: '<p><b>fb = altura(esquerda) − altura(direita)</b>. Toda sala precisa ter fb entre −1 e +1.</p><p>Depois de uma inserção, corrija a sala desequilibrada <b>mais baixa</b> no caminho da nova chave.</p><p><b>LL</b>: rotação à direita · <b>RR</b>: rotação à esquerda · <b>LR</b>: esquerda no filho, depois direita · <b>RL</b>: direita no filho, depois esquerda.</p>',
+  rb: '<p>A raiz é preta. Sala vermelha não tem filho vermelho. Todo caminho até uma vaga vazia (NIL) passa pelo mesmo número de pretas.</p><p>A chave nova (<b>X</b>) entra vermelha. Se o pai (<b>P</b>) também é vermelho, olhe o tio (<b>T</b>):</p><p><b>Tio vermelho</b>: P e T ficam pretos, o avô (<b>A</b>) fica vermelho, e o conflito sobe para A.<br><b>Tio preto ou NIL</b>: girar. X, P e A em linha reta pedem rotação simples; em zigue-zague, rotação dupla.</p>',
+  splay: '<p>Toda sala acessada (<b>X</b>) sobe até a raiz.</p><p><b>Zig</b>: o pai é a raiz; uma rotação.<br><b>Zig-zig</b>: X e o pai são filhos do mesmo lado; gira o avô, depois o pai.<br><b>Zig-zag</b>: lados opostos; gira o pai, depois o avô.</p>'
+};
+var LEGEND = {
+  bst: '<span><i class="sw path"></i>caminho percorrido</span><span><i class="sw fresh"></i>chave inserida</span>',
+  avl: '<span><i class="sw fresh"></i>chave nova</span><span><i class="sw cur"></i>sala escolhida</span><span>fb: fator de balanceamento</span>',
+  rb: '<span><i class="sw red"></i>vermelha</span><span><i class="sw black"></i>preta</span><span><i class="sw cur"></i>X, sala em conflito</span><span>P pai · T tio · A avô</span>',
+  splay: '<span><i class="sw cur"></i>X, sala acessada</span><span>P pai · A avô</span>'
+};
+
+/* ---------- progresso salvo (opcional) ---------- */
+var KEY = 'masmorra-arvores-busca-v1';
+var save = { stars:{}, teacher:false };
+try { var raw = localStorage.getItem(KEY); if (raw) { var s = JSON.parse(raw); if (s && s.stars) save = s; } } catch (e) {}
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+function unlocked(i){ return true; }
+function starStr(n, max){ var s=''; for (var i=0;i<(max||3);i++) s += '<span class="'+(i<n?'on':'')+'">★</span>'; return s; }
+
+/* ---------- mapa ---------- */
+function renderMap(){
+  var total = 0, html = '';
+  FLOORS.forEach(function(f, i){
+    var st = save.stars[f.id] || 0; total += st;
+    var open = unlocked(i), cls = 'floor' + (f.boss ? ' boss' : '') + (st ? ' done' : open ? ' open' : ' locked');
+    html += '<li class="'+cls+'"><div class="num">'+(i+1)+'</div><div><span class="struct">'+esc(f.struct)+'</span><h2>'+esc(f.name)+'</h2><p>'+esc(f.skill)+'</p></div>'+
+      '<div class="right"><div class="stars" aria-label="'+st+' de 3 estrelas">'+starStr(st)+'</div>'+
+      (open ? '<button class="btn '+(st?'':'primary')+'" data-floor="'+i+'">'+(st?'Jogar de novo':'Entrar')+'</button>' : '<span class="theory">Trancado: vença o andar '+i+'</span>')+
+      (f.theory ? '<a class="theory" href="'+f.theory+'" target="_blank" rel="noopener">Rever a teoria</a>' : '')+'</div></li>';
+  });
+  $('floorList').innerHTML = html;
+  $('totalStars').textContent = total + ' / ' + (FLOORS.length * 3);
+}
+$('floorList').addEventListener('click', function(e){ var b = e.target.closest('[data-floor]'); if (b) startFloor(+b.dataset.floor); });
+var resetArmed = false;
+$('reset').addEventListener('click', function(){
+  if (!resetArmed) { resetArmed = true; this.textContent = 'Clique de novo para confirmar'; var b = this; setTimeout(function(){ resetArmed = false; b.textContent = 'Zerar progresso'; }, 3500); return; }
+  resetArmed = false; save = { stars:{}, teacher:false }; persist(); this.textContent = 'Zerar progresso'; renderMap();
+});
+
+/* ---------- desenho da árvore ---------- */
+var DX = 58, DY = 76, NW = 46, NH = 38, PAD = 30;
+function layout(tree){
+  var pos = {}, i = 0, maxD = 0;
+  (function w(n, d){ if (!n) return; w(n.left, d+1); i++; pos[n.key] = { x: PAD + i*DX, y: PAD + NH/2 + d*DY }; if (d > maxD) maxD = d; w(n.right, d+1); })(tree.root, 0);
+  return { pos: pos, W: PAD*2 + (i+1)*DX, H: PAD*2 + NH + (maxD+1)*DY };
+}
+var lastPos = null, lastDim = null, animToken = 0;
+function draw(o, animate){
+  var L = layout(o.tree), from = lastPos, fromDim = lastDim;
+  lastPos = L.pos; lastDim = { W: L.W, H: L.H };
+  var token = ++animToken;
+  if (!animate || !from || reduced) { paint(o, L, L.pos, true, L.W, L.H); return; }
+  var W = Math.max(L.W, fromDim.W), H = Math.max(L.H, fromDim.H), t0 = null, dur = 560;
+  function frame(now){
+    if (token !== animToken) return;
+    if (t0 === null) t0 = now;
+    var p = Math.min(1, (now - t0) / dur), e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2, cur = {};
+    for (var k in L.pos) { var a = from[k] || L.pos[k], b = L.pos[k]; cur[k] = { x: a.x + (b.x - a.x)*e, y: a.y + (b.y - a.y)*e }; }
+    if (p >= 1) paint(o, L, L.pos, true, L.W, L.H); else { paint(o, L, cur, false, W, H); requestAnimationFrame(frame); }
+  }
+  requestAnimationFrame(frame);
+}
+function paint(o, L, P, final, W, H){
+  var s = '', marks = o.marks || {}, badges = o.badges || {};
+  E.nodes(o.tree).forEach(function(n){ if (n.parent) { var a = P[n.parent.key], b = P[n.key]; s += '<line class="edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"/>'; } });
+  if (final && o.slots) {
+    E.nodes(o.tree).forEach(function(n){
+      ['L','R'].forEach(function(side){
+        if (n[side === 'L' ? 'left' : 'right']) return;
+        var p = L.pos[n.key], x = p.x + (side === 'L' ? -DX/2 : DX/2), y = p.y + DY*0.72, bad = o.badSlot && o.badSlot.parent === n.key && o.badSlot.side === side;
+        var lbl = 'Vaga à ' + (side === 'L' ? 'esquerda' : 'direita') + ' de ' + n.key;
+        s += '<line class="slot-edge" x1="'+p.x+'" y1="'+(p.y+NH/2)+'" x2="'+x+'" y2="'+(y-12)+'"/>';
+        s += '<g class="slot'+(bad?' bad':'')+'" data-slot="'+n.key+':'+side+'" tabindex="0" role="button" aria-label="'+lbl+'" transform="translate('+x+','+y+')"><rect x="-14" y="-12" width="28" height="24" rx="5"/></g>';
+      });
+    });
+  }
+  if (final && o.nil) {
+    var g = L.pos[o.nil.g], nx = g.x + (o.nil.side === 'L' ? -DX/2 : DX/2), ny = g.y + DY*0.72;
+    s += '<line class="slot-edge" x1="'+g.x+'" y1="'+(g.y+NH/2)+'" x2="'+nx+'" y2="'+(ny-10)+'"/>';
+    s += '<g class="nil room" transform="translate('+nx+','+ny+')"><rect x="-15" y="-10" width="30" height="20" rx="4"/><text>NIL</text>'+badge('T', 15, -10)+'</g>';
+  }
+  E.nodes(o.tree).forEach(function(n){
+    var p = P[n.key], cls = 'room ' + (marks[n.key] || '');
+    if (o.rb) cls += n.color === 'R' ? ' rb-red' : ' rb-black';
+    var click = o.clickNodes ? ' click" tabindex="0" role="button" aria-label="Sala '+n.key : '';
+    s += '<g class="'+cls+click+'" data-key="'+n.key+'" transform="translate('+p.x+','+p.y+')"><rect x="'+(-NW/2)+'" y="'+(-NH/2)+'" width="'+NW+'" height="'+NH+'" rx="7"/><text>'+n.key+'</text>';
+    if (badges[n.key]) s += badge(badges[n.key], NW/2 - 2, -NH/2 + 1);
+    if (o.bf && (o.bf === 'all' || o.bf[n.key])) { var b = E.bf(n); s += '<text class="bfl'+(Math.abs(b) > 1 ? ' crit' : '')+'" y="'+(NH/2 + 12)+'">fb '+(b > 0 ? '+' : b < 0 ? '−' : '')+Math.abs(b)+'</text>'; }
+    s += '</g>';
+  });
+  var svg = $('tree');
+  svg.setAttribute('viewBox', '0 0 '+W+' '+H); svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.innerHTML = s;
+}
+function badge(t, x, y){ return '<g class="badge"><circle cx="'+x+'" cy="'+y+'" r="10"/><text x="'+x+'" y="'+y+'">'+t+'</text></g>'; }
+
+/* ---------- partida ---------- */
+var run = null;
+function startFloor(i){
+  run = { fi: i, floor: FLOORS[i], list: E.genFloor(FLOORS[i].id), idx: 0, lives: 3, errors: 0, okCount: 0 };
+  $('mapView').hidden = true; $('floorView').hidden = false; $('veil').hidden = true;
+  $('log').innerHTML = '';
+  $('fNum').textContent = 'Andar ' + (i+1) + ' · ' + FLOORS[i].struct;
+  $('fName').textContent = FLOORS[i].name;
+  window.scrollTo(0, 0);
+  loadChallenge();
+}
+function backToMap(){ run = null; $('floorView').hidden = true; $('veil').hidden = true; $('mapView').hidden = false; renderMap(); window.scrollTo(0, 0); }
+$('back').addEventListener('click', backToMap);
+
+function loadChallenge(){
+  var ch = run.list[run.idx];
+  run.ch = C[ch.type].init(ch);
+  run.ch.type = ch.type;
+  lastPos = null;
+  $('rule').innerHTML = RULES[ch.type];
+  $('legend').innerHTML = LEGEND[ch.type];
+  setFeedback('', '');
+  $('prompt').classList.remove('win');
+  refresh(false);
+}
+function refresh(animate){
+  var c = run.ch, v = C[c.type].view(c);
+  draw(v.tree, animate);
+  $('pTag').textContent = (run.floor.boss ? TYPE_NAME[c.type] + ' · ' : '') + 'Desafio ' + (run.idx+1) + ' de ' + run.list.length;
+  $('pTitle').textContent = v.title;
+  $('pText').innerHTML = v.text || '';
+  var acts = c.done ? [{ act:'next', label: run.idx + 1 < run.list.length ? 'Próximo desafio' : 'Concluir andar', primary:true, key:'Enter' }] : (v.actions || []);
+  $('actions').innerHTML = acts.map(function(a, i){
+    var k = a.key || (i + 1);
+    if (a.sub) return '<button class="btn opt" data-act="'+a.act+'"><span class="l"><kbd>'+k+'</kbd>'+esc(a.label)+'</span><span class="s">'+esc(a.sub)+'</span></button>';
+    return '<button class="btn '+(a.primary?'primary':'')+'" data-act="'+a.act+'">'+esc(a.label)+' <kbd>'+k+'</kbd></button>';
+  }).join('');
+  $('prompt').classList.toggle('win', !!c.done);
+  renderHud();
+}
+function renderHud(){
+  var h = ''; for (var i = 0; i < 3; i++) h += '<span class="'+(i < run.lives ? '' : 'off')+'">♥</span>';
+  $('hearts').innerHTML = h; $('hearts').setAttribute('aria-label', run.lives + ' de 3 vidas');
+  var d = '';
+  for (var j = 0; j < run.list.length; j++) d += '<i class="'+(j < run.okCount ? 'ok' : j === run.idx ? 'cur' : '')+'"></i>';
+  $('dots').innerHTML = d + '<span>' + run.okCount + '/' + run.list.length + '</span>';
+}
+function setFeedback(t, cls){ var f = $('pFeedback'); f.textContent = t; f.className = 'feedback ' + (cls || ''); }
+function log(t, cls){ var li = document.createElement('li'); li.className = cls || ''; li.textContent = t; var l = $('log'); l.insertBefore(li, l.firstChild); }
+function wrong(hint){
+  run.lives--; run.errors++;
+  setFeedback(hint, 'bad'); log('Erro: ' + hint, 'bad');
+  var p = $('prompt'); p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake');
+  renderHud();
+  if (run.lives <= 0) setTimeout(lose, 900);
+}
+function good(t, logText){ setFeedback(t, 'good'); log(logText || t, 'good'); }
+function finishChallenge(){ run.ch.done = true; run.okCount++; }
+
+$('actions').addEventListener('click', function(e){
+  var b = e.target.closest('[data-act]'); if (!b || !run || run.lives <= 0) return;
+  if (b.dataset.act === 'next') { run.idx++; if (run.idx >= run.list.length) win(); else loadChallenge(); return; }
+  var c = run.ch; if (c.done || !C[c.type].onAct) return;
+  C[c.type].onAct(c, b.dataset.act);
+});
+function svgActivate(target){
+  if (!run || run.lives <= 0 || run.ch.done) return;
+  var c = run.ch, sl = target.closest('[data-slot]'), nd = target.closest('[data-key]');
+  if (sl && C[c.type].onSlot) { var p = sl.dataset.slot.split(':'); C[c.type].onSlot(c, +p[0], p[1]); }
+  else if (nd && C[c.type].onNode) C[c.type].onNode(c, +nd.dataset.key);
+}
+$('tree').addEventListener('click', function(e){ svgActivate(e.target); });
+$('tree').addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); svgActivate(e.target); } });
+document.addEventListener('keydown', function(e){
+  if ($('floorView').hidden || !$('veil').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest && e.target.closest('#tree')) return;
+  var btns = $('actions').querySelectorAll('[data-act]');
+  if (e.key === 'Enter' && run && run.ch.done && btns[0]) { e.preventDefault(); btns[0].click(); return; }
+  var n = parseInt(e.key, 10);
+  if (n >= 1 && n <= btns.length && !(run && run.ch.done)) { btns[n-1].click(); }
+});
+
+function win(){
+  var st = run.errors === 0 ? 3 : run.errors === 1 ? 2 : 1, f = run.floor;
+  save.stars[f.id] = Math.max(save.stars[f.id] || 0, st); persist();
+  var next = run.fi + 1 < FLOORS.length ? run.fi + 1 : -1;
+  $('banner').className = 'banner';
+  $('bTitle').textContent = f.boss ? 'O Guardião caiu!' : 'Andar vencido!';
+  $('bStars').innerHTML = starStr(st);
+  $('bText').textContent = f.boss ? 'Você dominou a era das árvores de busca: BST, AVL, rubro-negra e splay. ' + errText() : f.name + ' está para trás. ' + errText();
+  $('bActions').innerHTML = (next >= 0 ? '<button class="btn primary" data-b="next">Descer ao andar ' + (next+1) + '</button>' : '') + '<button class="btn" data-b="again">Jogar de novo</button><button class="btn ghost" data-b="map">Mapa</button>';
+  $('veil').hidden = false; $('bActions').querySelector('button').focus();
+}
+function errText(){ return run.errors === 0 ? 'Nenhum erro.' : run.errors === 1 ? 'Um erro.' : run.errors + ' erros.'; }
+function lose(){
+  $('banner').className = 'banner lost';
+  $('bTitle').textContent = 'As salas desabaram';
+  $('bStars').innerHTML = '';
+  $('bText').textContent = 'Você ficou sem vidas no desafio ' + (run.idx+1) + ' de ' + run.list.length + '. Releia a regra do andar e tente de novo: os desafios mudam a cada tentativa.';
+  $('bActions').innerHTML = '<button class="btn primary" data-b="again">Tentar de novo</button><button class="btn ghost" data-b="map">Mapa</button>';
+  $('veil').hidden = false; $('bActions').querySelector('button').focus();
+}
+$('bActions').addEventListener('click', function(e){
+  var b = e.target.closest('[data-b]'); if (!b) return;
+  var a = b.dataset.b, fi = run.fi;
+  if (a === 'map') backToMap(); else if (a === 'again') startFloor(fi); else if (a === 'next') { if (unlocked(fi+1)) startFloor(fi+1); else backToMap(); }
+});
+
+function dirWord(d){ return d === 'L' ? 'esquerda' : 'direita'; }
+function sideOf(n){ return n.parent && n.parent.left === n ? 'L' : 'R'; }
+function fbStr(b){ return (b > 0 ? '+' : b < 0 ? '−' : '') + Math.abs(b); }
+
+/* ---------- controladores de cada tipo de desafio ---------- */
+var C = {};
+
+C.bst = {
+  init: function(ch){ return { tree: E.clone(ch.tree), key: ch.key, answer: ch.answer, marks: {}, badSlot: null }; },
+  view: function(c){
+    if (c.done) return { tree: { tree: c.tree, marks: c.marks }, title: 'A chave ' + c.key + ' entrou no lugar certo', text: c.trace };
+    return { tree: { tree: c.tree, slots: true, badSlot: c.badSlot, marks: c.marks }, title: 'Onde a chave ' + c.key + ' entra?',
+      text: 'Clique na vaga tracejada onde <b>' + c.key + '</b> deve ficar. Menor à esquerda, maior à direita.' };
+  },
+  onSlot: function(c, parent, side){
+    var path = E.insertPath(c.tree, c.key);
+    if (parent === c.answer.parent && side === c.answer.side) {
+      var parts = path.map(function(s){ return (c.key < s.node.key ? 'menor que ' : 'maior que ') + s.node.key + ' → ' + dirWord(s.dir); });
+      c.marks = {}; path.forEach(function(s){ c.marks[s.node.key] = 'path'; });
+      E.bstInsert(c.tree, c.key); c.marks[c.key] = 'fresh';
+      c.trace = c.key + ': ' + parts.join('; ') + '.';
+      finishChallenge();
+      good('Certo! ' + path.length + (path.length === 1 ? ' comparação.' : ' comparações até a vaga.'), 'Inseriu ' + c.key + ' à ' + dirWord(side) + ' de ' + parent + '.');
+      refresh(true); return;
+    }
+    // caminho até a vaga clicada: primeira sala onde ele diverge do caminho certo
+    var clicked = [], n = E.find(c.tree, parent), chain = [];
+    while (n) { chain.unshift(n); n = n.parent; }
+    chain.forEach(function(m, i){ clicked.push(i + 1 < chain.length ? (chain[i+1] === m.left ? 'L' : 'R') : side); });
+    var at = 0; while (at < path.length && path[at].node === chain[at] && path[at].dir === clicked[at]) at++;
+    var node = path[at].node, d = path[at].dir;
+    c.badSlot = { parent: parent, side: side };
+    c.marks = {}; for (var i = 0; i < at; i++) c.marks[path[i].node.key] = 'path';
+    c.marks[node.key] = 'cur';
+    wrong('Em ' + node.key + ', a chave ' + c.key + ' é ' + (c.key < node.key ? 'menor' : 'maior') + ', então o caminho segue pela ' + dirWord(d) + '.');
+    refresh(false);
+  }
+};
+
+C.avl = {
+  init: function(ch){ return { tree: E.clone(ch.tree), key: ch.key, answer: ch.answer, phase: 'find', shown: {}, marks: {} }; },
+  view: function(c){
+    var marks = {}; for (var k in c.marks) marks[k] = c.marks[k];
+    if (c.phase !== 'done') marks[c.key] = (marks[c.key] ? marks[c.key] + ' ' : '') + 'fresh';
+    if (c.done) return { tree: { tree: c.tree, bf: 'all', marks: marks }, title: 'Equilíbrio restaurado', text: c.trace };
+    if (c.phase === 'find') return { tree: { tree: c.tree, clickNodes: true, bf: c.shown, marks: marks }, title: 'A chave ' + c.key + ' acabou de entrar. Onde quebrou o equilíbrio?',
+      text: 'Clique na sala desequilibrada <b>mais baixa</b> (|fb| ≥ 2) no caminho de <b>' + c.key + '</b> até a raiz.' };
+    var z = E.find(c.tree, c.answer.z);
+    return { tree: { tree: c.tree, bf: 'all', marks: marks }, title: 'Qual rotação reequilibra a sala ' + c.answer.z + '?',
+      text: 'fb(' + c.answer.z + ') = ' + fbStr(E.bf(z)) + '. Veja de que lado ela pesa e de que lado do filho a chave ' + c.key + ' entrou.',
+      actions: [
+        { act:'LL', label:'LL', sub:'rotação simples à direita' },
+        { act:'RR', label:'RR', sub:'rotação simples à esquerda' },
+        { act:'LR', label:'LR', sub:'esquerda no filho, depois direita' },
+        { act:'RL', label:'RL', sub:'direita no filho, depois esquerda' }
+      ] };
+  },
+  onNode: function(c, k){
+    if (c.phase !== 'find') return;
+    var n = E.find(c.tree, k), b = E.bf(n);
+    if (k === c.answer.z) {
+      c.phase = 'rotate'; c.marks = {}; c.marks[k] = 'cur';
+      good('Isso: a sala ' + k + ' tem fb ' + fbStr(b) + '. Agora escolha a rotação.', 'Achou o desequilíbrio em ' + k + ' (fb ' + fbStr(b) + ').');
+      refresh(false); return;
+    }
+    c.shown[k] = true; c.marks = {}; c.marks[k] = 'bad';
+    if (Math.abs(b) > 1) wrong('A sala ' + k + ' também está desequilibrada (fb ' + fbStr(b) + '), mas existe outra mais baixa no caminho de ' + c.key + '. Corrija a mais baixa primeiro.');
+    else wrong('A sala ' + k + ' está equilibrada (fb ' + fbStr(b) + '). Suba pelo caminho de ' + c.key + ' até a raiz.');
+    refresh(false);
+  },
+  onAct: function(c, a){
+    if (c.phase !== 'rotate') return;
+    var z = E.find(c.tree, c.answer.z), cs = c.answer.cs, heavy = cs[0];
+    if (a === cs) {
+      var child = heavy === 'L' ? z.left : z.right, desc = {
+        LL: 'rotação à direita em ' + z.key, RR: 'rotação à esquerda em ' + z.key,
+        LR: 'rotação à esquerda em ' + child.key + ', depois à direita em ' + z.key, RL: 'rotação à direita em ' + child.key + ', depois à esquerda em ' + z.key }[cs];
+      E.avlApply(c.tree, z, cs);
+      c.phase = 'done'; c.marks = {}; c.marks[c.key] = 'fresh';
+      c.trace = 'Caso ' + cs + ': ' + desc + '. Todos os fatores voltaram para −1, 0 ou +1.';
+      finishChallenge(); good('Certo! Caso ' + cs + '.', 'Caso ' + cs + ' em ' + c.answer.z + ': ' + desc + '.');
+      refresh(true); return;
+    }
+    var child2 = heavy === 'L' ? z.left : z.right;
+    if (a[0] !== heavy) wrong('fb(' + z.key + ') = ' + fbStr(E.bf(z)) + ': quem pesa é o lado ' + (heavy === 'L' ? 'esquerdo' : 'direito') + ', então o caso começa com ' + heavy + '.');
+    else wrong('O lado ' + (heavy === 'L' ? 'esquerdo' : 'direito') + ' pesa, certo. Mas olhe o filho ' + child2.key + ': a chave ' + c.key + ' entrou do outro lado dele.');
+  }
+};
+
+var RB_ACTS = [
+  { act:'ok', label:'Nada a fazer', sub:'nenhuma regra quebrada' },
+  { act:'recolor', label:'Recolorir', sub:'P e T pretos, A vermelho' },
+  { act:'single', label:'Rotação simples', sub:'gira o avô e troca cores' },
+  { act:'double', label:'Rotação dupla', sub:'gira o pai, depois o avô' },
+  { act:'root', label:'Pintar a raiz', sub:'a raiz volta a ser preta' }
+];
+var RB_NAME = { ok:'nada a fazer', recolor:'recolorir', single:'rotação simples', double:'rotação dupla', root:'pintar a raiz de preto' };
+C.rb = {
+  init: function(ch){ return { tree: E.clone(ch.tree), key: ch.key, x: ch.key, step: 0 }; },
+  view: function(c){
+    var marks = {}, badges = {}, nil = null;
+    if (c.done) { marks[c.key] = 'fresh'; return { tree: { tree: c.tree, rb: true, marks: marks }, title: 'A cripta está em ordem', text: c.trace }; }
+    var x = E.find(c.tree, c.x), r = E.rbRoles(c.tree, x);
+    marks[x.key] = 'cur'; badges[x.key] = 'X';
+    if (r.p) badges[r.p.key] = 'P';
+    if (r.g) badges[r.g.key] = 'A';
+    if (r.u) badges[r.u.key] = 'T'; else if (r.g) nil = { g: r.g.key, side: r.uSide };
+    var title = c.step === 0 ? 'A chave ' + c.key + ' entrou vermelha. E agora?' : 'O conflito subiu: ' + x.key + ' é o novo X. E agora?';
+    return { tree: { tree: c.tree, rb: true, marks: marks, badges: badges, nil: nil }, title: title,
+      text: 'Olhe as cores de <b>X</b>, do pai <b>P</b> e do tio <b>T</b>, e o formato entre X, P e o avô <b>A</b>.', actions: RB_ACTS };
+  },
+  onAct: function(c, a){
+    var x = E.find(c.tree, c.x), d = E.rbDiagnose(c.tree, x), r = E.rbRoles(c.tree, x);
+    if (a === d) {
+      var before = x.key, nx = E.rbApply(c.tree, x, d);
+      c.step++;
+      var msg;
+      if (d === 'ok') msg = 'Certo: o pai de ' + before + ' é preto, nenhuma regra foi quebrada.';
+      else if (d === 'root') msg = 'Certo: a raiz ' + before + ' voltou a ser preta.';
+      else if (d === 'recolor') msg = 'Certo: ' + r.p.key + ' e ' + r.u.key + ' ficaram pretos e ' + r.g.key + ' ficou vermelho.';
+      else if (d === 'single') msg = 'Certo: rotação no avô ' + r.g.key + '; ' + r.p.key + ' subiu e ficou preto.';
+      else msg = 'Certo: rotação em ' + r.p.key + ', depois no avô ' + r.g.key + '; ' + before + ' subiu e ficou preto.';
+      if (!c.log) c.log = [];
+      c.log.push(RB_NAME[d]);
+      if (nx) { c.x = nx.key; good(msg + ' Agora o conflito pode ter subido.', 'RN: ' + RB_NAME[d] + ' em ' + before + '.'); refresh(true); return; }
+      c.trace = 'Sequência: ' + c.log.join(' → ') + '. Todas as regras valem de novo.';
+      finishChallenge(); good(msg, 'RN: ' + RB_NAME[d] + ' em ' + before + '.'); refresh(true); return;
+    }
+    var hint;
+    if (d === 'ok') hint = x === c.tree.root ? 'X é a raiz e já está preta: nenhuma regra quebrada.' : 'O pai de X é preto. Não existe par vermelho-vermelho, então nada foi quebrado.';
+    else if (d === 'root') hint = 'X chegou à raiz e está vermelho. Que regra a raiz precisa cumprir?';
+    else if (a === 'ok') hint = 'X e o pai são vermelhos: há um par vermelho-vermelho. Algo precisa ser feito.';
+    else if (a === 'root') hint = 'X não é a raiz. O conflito está entre X e o pai.';
+    else if (d === 'recolor') hint = 'O tio de X é vermelho. Com tio vermelho não se gira: se recolore.';
+    else if (a === 'recolor') hint = 'O tio de X é ' + (r.u ? 'preto' : 'NIL, que conta como preto') + '. Recolorir não resolve: é preciso girar.';
+    else hint = 'Olhe o formato X → P → A: X é filho ' + (sideOf(x) === 'L' ? 'esquerdo' : 'direito') + ' e P é filho ' + (sideOf(r.p) === 'L' ? 'esquerdo' : 'direito') + '. Linha reta ou zigue-zague?';
+    wrong(hint);
+  }
+};
+
+C.splay = {
+  init: function(ch){ return { tree: E.clone(ch.tree), key: ch.key, steps: [] }; },
+  view: function(c){
+    var x = E.find(c.tree, c.key), marks = {}, badges = {};
+    marks[c.key] = 'cur'; badges[c.key] = 'X';
+    if (c.done) return { tree: { tree: c.tree, marks: marks, badges: badges }, title: c.key + ' chegou à raiz', text: c.trace };
+    if (x.parent) { badges[x.parent.key] = 'P'; if (x.parent.parent) badges[x.parent.parent.key] = 'A'; }
+    return { tree: { tree: c.tree, marks: marks, badges: badges }, title: (c.steps.length ? 'Continue subindo ' : 'Acessei a sala ') + c.key + (c.steps.length ? '' : '. Leve-a até a raiz.'),
+      text: 'Qual o próximo passo? Profundidade atual de X: <b>' + E.depth(x) + '</b>.',
+      actions: [
+        { act:'zig', label:'Zig', sub:'o pai é a raiz: uma rotação' },
+        { act:'zigzig', label:'Zig-zig', sub:'mesmo lado: avô, depois pai' },
+        { act:'zigzag', label:'Zig-zag', sub:'lados opostos: pai, depois avô' }
+      ] };
+  },
+  onAct: function(c, a){
+    var x = E.find(c.tree, c.key), d = E.splayDiagnose(x), p = x.parent;
+    var NAME = { zig:'zig', zigzig:'zig-zig', zigzag:'zig-zag' };
+    if (a === d) {
+      E.splayApply(c.tree, x, d); c.steps.push(NAME[d]);
+      if (!x.parent) { c.trace = 'Passos: ' + c.steps.join(' → ') + '. A sala acessada agora é a raiz, e as vizinhas do caminho subiram junto.'; finishChallenge(); good('Certo! ' + NAME[d] + ' e ' + c.key + ' é a raiz.', 'Splay de ' + c.key + ': ' + c.steps.join(' → ') + '.'); }
+      else good('Certo: ' + NAME[d] + '. ' + c.key + ' está na profundidade ' + E.depth(x) + '.', 'Splay: ' + NAME[d] + ' em ' + c.key + '.');
+      refresh(true); return;
+    }
+    if (d === 'zig') wrong('O pai de X (' + p.key + ') é a raiz: não há avô, basta uma rotação.');
+    else if (a === 'zig') wrong('O pai de X (' + p.key + ') não é a raiz: há um avô (' + p.parent.key + ') na jogada.');
+    else wrong('X é filho ' + (sideOf(x) === 'L' ? 'esquerdo' : 'direito') + ' de ' + p.key + ', e ' + p.key + ' é filho ' + (sideOf(p) === 'L' ? 'esquerdo' : 'direito') + ' de ' + p.parent.key + '. Mesmo lado ou lados opostos?');
+  }
+};
+
+window.__game = { E: E, get run(){ return run; }, startFloor: startFloor };
+renderMap();
+})();
+</script>
+</body>
+</html>

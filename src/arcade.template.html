@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Queda das Chaves</title>
+<!--FONTS--><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Alegreya+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"><!--/FONTS-->
+<style>
+:root{
+  --bg:#16151F; --stone:#23222F; --stone-2:#2E2C3D; --line:#45425A;
+  --ink:#ECE3CF; --muted:#A9A1B8; --torch:#F2A93B; --ember:#E5604A; --moss:#7CC39A;
+  --display:'IM Fell English SC', Georgia, serif;
+  --body:'Alegreya Sans', 'Trebuchet MS', Verdana, sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;
+  background-image:radial-gradient(1200px 500px at 30% -10%, #2a2440 0%, transparent 60%);background-attachment:fixed;
+  -webkit-tap-highlight-color:transparent}
+button{font-family:var(--body);font-size:16px;cursor:pointer;color:inherit}
+button:focus-visible,input:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1280px;margin:0 auto;padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px}
+
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.brand{flex:1;min-width:200px}
+.brand small{display:block;color:var(--torch);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.brand h1{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1.05}
+.stat{display:flex;flex-direction:column;align-items:flex-end;min-width:56px}
+.stat span{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.stat b{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+#combo.hot{color:var(--torch)}
+.hearts{font-size:24px;letter-spacing:2px;color:var(--ember);white-space:nowrap}
+.hearts .off{color:var(--line)}
+.hbtn{background:var(--stone-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px}
+.hbtn:hover{border-color:var(--torch)}
+
+.stage{position:relative;height:min(64vh,620px);min-height:380px;background:#100F17;border:1px solid var(--line);border-radius:14px;overflow:hidden;touch-action:manipulation}
+canvas{display:block;width:100%;height:100%}
+.callout{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(35,34,47,.92);border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:15px;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.callout.alarm{border-color:var(--ember);color:#FFD9D2}
+.callout b{color:var(--torch)}
+.callout .slot{display:inline-block;min-width:26px;text-align:center;border:1px solid var(--line);border-radius:6px;margin-left:4px;font-weight:800}
+.callout .slot.filled{border-color:var(--torch);color:var(--torch)}
+.toast{position:absolute;left:50%;bottom:14px;transform:translate(-50%,8px);opacity:0;transition:opacity .2s,transform .2s;background:var(--stone-2);border:1px solid var(--line);border-left:5px solid var(--moss);border-radius:10px;padding:8px 14px;font-weight:500;max-width:calc(100% - 24px);pointer-events:none;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.bad{border-left-color:var(--ember);color:#FFD9D2}
+
+.overlay{position:absolute;inset:0;background:rgba(10,9,15,.86);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow:auto;z-index:3}
+.panel{max-width:640px;width:100%;text-align:center;margin:auto}
+.panel h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,6vw,52px);margin:0;line-height:1;color:var(--torch)}
+.panel.lost h2{color:var(--ember)}
+.panel .sub{color:var(--muted);margin:6px 0 16px}
+.how{list-style:none;padding:0;margin:0 0 16px;text-align:left;display:flex;flex-direction:column;gap:9px}
+.how li{background:var(--stone);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:15px}
+.how b{color:var(--torch)}
+kbd{font-family:var(--body);font-size:13px;font-weight:700;border:1px solid currentColor;border-radius:5px;padding:0 6px;opacity:.85}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;justify-content:center;align-items:center}
+.btn{background:var(--stone-2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px 18px;font-weight:700}
+.btn:hover{border-color:var(--torch)}
+.btn.primary{background:var(--torch);color:#1d1408;border-color:var(--torch);font-size:18px;padding:12px 26px}
+label.check{display:inline-flex;gap:8px;align-items:center;color:var(--muted);font-size:15px;cursor:pointer}
+label.check input{accent-color:var(--torch);width:18px;height:18px}
+.bestline{color:var(--muted);font-size:14px;margin-top:12px}
+.scorebig{font-size:54px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;margin:10px 0 2px}
+.newrec{color:var(--torch);font-weight:700;min-height:1.4em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:14px 0}
+.grid div{background:var(--stone);border:1px solid var(--line);border-radius:10px;padding:8px}
+.grid span{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.grid b{font-size:22px;font-variant-numeric:tabular-nums}
+.review{text-align:left;background:var(--stone);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px}
+.review h3{font-family:var(--display);font-weight:400;font-size:20px;margin:0 0 6px}
+.review ul{margin:0;padding-left:18px;font-size:15px;color:var(--muted)}
+.review li{margin:3px 0}
+
+.pad{display:grid;grid-template-columns:1fr minmax(0,1.1fr) 1fr;gap:10px;align-items:stretch}
+.padbtn{background:var(--stone);border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;align-items:center;justify-content:center;gap:12px;font-weight:700;user-select:none;touch-action:manipulation;min-height:66px}
+.padbtn .arrow{font-size:30px;color:var(--torch);line-height:1}
+.padbtn small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.padbtn:active,.padbtn.flash{border-color:var(--torch);background:var(--stone-2)}
+.padbtn.flash.bad{border-color:var(--ember)}
+.hintbox{background:var(--stone);border:1px dashed var(--torch);border-radius:12px;padding:8px 14px;font-size:15.5px}
+.hintbox b{color:var(--torch);font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:block}
+.hintbtn{background:var(--stone);border:1px solid var(--line);border-radius:14px;padding:8px 12px;font-size:15px;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.hintbtn:hover{border-color:var(--torch)}
+.hintbtn .t{font-weight:800;color:var(--torch)}
+.hintbtn small{color:var(--muted);font-size:13px}
+.padmid{background:var(--stone);border:1px solid var(--line);border-radius:14px;padding:8px 12px;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center}
+.padmid b{color:var(--ink)}
+@media (max-width:700px){
+  .stage{height:56vh;min-height:320px}
+  .brand h1{font-size:24px}
+  .stat b{font-size:20px}
+  .pad{grid-template-columns:1fr auto 1fr}
+  #padmid{display:none}
+  .hintbtn{padding:6px 8px}
+  .hintbtn small#hintCost{display:none}
+  .padbtn{min-height:76px}
+  .padbtn .lbl{display:none}
+  .hud{gap:6px 14px}
+  .brand{flex-basis:100%}
+  .hbtn{padding:5px 9px;font-size:13px}
+  .hbtn kbd{display:none}
+  .stat{min-width:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hud">
+    <div class="brand"><small>Masmorra Arcade · Era 03</small><h1>A Queda das Chaves</h1></div>
+    <div class="stat"><span>Pontos</span><b id="score">0</b></div>
+    <div class="stat"><span>Combo</span><b id="combo">×1</b></div>
+    <div class="stat"><span>Onda</span><b id="wave">1</b></div>
+    <div class="stat"><span>Recorde</span><b id="best">0</b></div>
+    <div class="hearts" id="hearts" aria-label="Vidas"></div>
+    <button class="hbtn" id="muteBtn" aria-pressed="false">Som ligado <kbd>M</kbd></button>
+    <button class="hbtn" id="pauseBtn">Pausar <kbd>P</kbd></button>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="Árvore da masmorra"></canvas>
+    <div class="callout" id="callout" hidden aria-live="polite"></div>
+    <div class="toast" id="toast" aria-live="polite"></div>
+
+    <div class="overlay" id="titleOv">
+      <div class="panel">
+        <h2>A Queda das Chaves</h2>
+        <p class="sub">As chaves despencam na masmorra. Você decide o caminho de cada uma.</p>
+        <ul class="how">
+          <li><kbd>←</kbd> <kbd>→</kbd> (ou <kbd>A</kbd> <kbd>D</kbd>, ou os botões): em cada sala, mande a chave para a <b>esquerda se for menor</b> ou para a <b>direita se for maior</b>, antes que o anel se apague.</li>
+          <li>A partir da <b>onda 3</b> a árvore vira AVL. Quando ela tremer, aperte duas setas: a 1ª é o <b>lado que pesa</b>, a 2ª é o <b>lado do filho</b> onde a chave entrou. <kbd>←</kbd><kbd>←</kbd> LL · <kbd>←</kbd><kbd>→</kbd> LR · <kbd>→</kbd><kbd>→</kbd> RR · <kbd>→</kbd><kbd>←</kbd> RL.</li>
+          <li>Travou? <kbd>H</kbd> ou o botão <b>Dica</b>: a 1ª camada mostra o que olhar, a 2ª mostra o raciocínio. Cada camada custa pontos e dá mais tempo.</li>
+          <li>Acertos seguidos multiplicam os pontos. Cada erro custa uma vida. Uma onda sem erros devolve uma vida.</li>
+        </ul>
+        <div class="row">
+          <button class="btn primary" id="startBtn">Começar <kbd>Enter</kbd></button>
+          <label class="check"><input type="checkbox" id="practice"> Treino: sem relógio</label>
+          <label class="check"><input type="checkbox" id="explainOpt" checked> Explicar cada erro numa janela</label>
+          <label class="check">Começar na <select id="startWave" style="background:var(--stone-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:var(--body);font-size:15px"><option value="1">onda 1 · BST</option><option value="2">onda 2 · BST</option><option value="3">onda 3 · AVL</option><option value="4">onda 4 · AVL</option><option value="5">onda 5 · AVL</option><option value="6">onda 6 · AVL rápida</option><option value="8">onda 8 · AVL muito rápida</option></select></label>
+        </div>
+        <p class="bestline" id="bestLine"></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="pauseOv" hidden>
+      <div class="panel"><h2>Pausa</h2><p class="sub">A masmorra espera por você.</p>
+        <div class="row"><button class="btn primary" id="resumeBtn">Continuar <kbd>P</kbd></button><button class="btn" id="quitBtn">Desistir</button></div></div>
+    </div>
+
+    <div class="overlay" id="overOv" hidden>
+      <div class="panel lost">
+        <h2>A masmorra desabou</h2>
+        <div class="scorebig" id="finalScore">0</div>
+        <div class="newrec" id="newRec"></div>
+        <div class="grid" id="finalStats"></div>
+        <div class="review" id="review"><h3>Onde você tropeçou</h3><ul id="reviewList"></ul></div>
+        <div class="row"><button class="btn primary" id="againBtn">Jogar de novo <kbd>Enter</kbd></button><button class="btn" id="homeBtn">Início</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="hintbox" id="hintbox" hidden aria-live="polite"></div>
+
+  <div class="pad">
+    <button class="padbtn" id="btnL" aria-label="Esquerda"><span class="arrow">◀</span><span class="lbl">Esquerda<small>menor · <kbd>←</kbd></small></span></button>
+    <button class="hintbtn" id="hintBtn"><span class="t">Dica <kbd>H</kbd></span><small id="hintCost">1ª camada: −10 pontos e +1,5 s</small><small id="padmid"><span>Menor à <b>esquerda</b>, maior à <b>direita</b>.</span></small></button>
+    <button class="padbtn" id="btnR" aria-label="Direita"><span class="lbl">Direita<small>maior · <kbd>→</kbd></small></span><span class="arrow">▶</span></button>
+  </div>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function(){
+'use strict';
+var E = Engine, $ = function(id){ return document.getElementById(id); };
+var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var COL = { bg:'#100F17', stone:'#23222F', stone2:'#2E2C3D', line:'#45425A', ink:'#ECE3CF', muted:'#A9A1B8', torch:'#F2A93B', ember:'#E5604A', moss:'#7CC39A', edge:'#5B5674' };
+var FONT = "'Alegreya Sans', 'Trebuchet MS', Verdana, sans-serif", DFONT = "'IM Fell English SC', Georgia, serif";
+
+/* ---------- som ---------- */
+var AC = null, muted = false;
+function audioInit(){ if (AC) return; try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+function tone(f, dur, type, vol, slide, delay){
+  if (muted || !AC) return;
+  try {
+    var t = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.08, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+var SFX = {
+  step: function(c){ tone(392 * Math.pow(2, Math.min(c, 14) / 12), 0.09, 'triangle', 0.07); },
+  land: function(){ tone(523, 0.14, 'triangle', 0.07); tone(784, 0.22, 'triangle', 0.06, 0, 0.06); },
+  bad: function(){ tone(180, 0.32, 'sawtooth', 0.06, 0.5); },
+  rot: function(){ tone(260, 0.3, 'triangle', 0.08, 2.4); tone(1046, 0.25, 'sine', 0.04, 0, 0.18); },
+  quake: function(){ tone(70, 0.5, 'sawtooth', 0.05, 0.8); },
+  wave: function(){ [523, 659, 784, 1046].forEach(function(f, i){ tone(f, 0.2, 'triangle', 0.06, 0, i * 0.09); }); },
+  over: function(){ [392, 330, 262, 196].forEach(function(f, i){ tone(f, 0.3, 'sawtooth', 0.05, 0, i * 0.16); }); }
+};
+
+/* ---------- armazenamento opcional ---------- */
+var BEST_KEY = 'masmorra-queda-recorde';
+var best = 0; try { best = +localStorage.getItem(BEST_KEY) || 0; } catch (e) {}
+function saveBest(){ try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {} }
+
+/* ---------- canvas ---------- */
+var cv = $('cv'), ctx = cv.getContext('2d'), W = 800, H = 500;
+function resize(){
+  var r = $('stage').getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(280, r.width); H = Math.max(260, r.height);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize); resize();
+
+/* ---------- estado ---------- */
+var G = null;
+function newGame(practice, startWave){
+  G = { state:'intro', practice: practice, explain: $('explainOpt').checked, modal:false, tree:{ root:null }, disp:{}, fresh:{}, score:0, combo:0, lives:3, wave:0, avl:false,
+    spawned:0, perWave:0, orb:null, bal:null, parts:[], floats:[], shake:0, spawnDelay:0, banner:null, introT:0, errWave:0,
+    mistakes:[], stats:{ dec:0, ok:0, inserted:0, rot:0, rotOk:0, bestCombo:0, waves:0, hints:0 }, time:0, hint:{ ctx:null, level:0 } };
+  G.wave = Math.max(0, (startWave || 1) - 1);
+  nextWave();
+}
+function mult(){ return Math.min(5, 1 + Math.floor(G.combo / 5)); }
+function rnd(a, b){ return a + Math.random() * (b - a); }
+function pick(a){ return a[Math.floor(Math.random() * a.length)]; }
+
+function nextWave(){
+  G.wave++; G.avl = G.wave >= 3; G.spawned = 0; G.errWave = 0;
+  G.perWave = Math.min(14, (G.avl ? 6 : 5) + G.wave);
+  G.tree = { root:null }; G.disp = {}; G.fresh = {};
+  var seed = []; while (seed.length < (G.avl ? 4 : 3)) { var k = 10 + Math.floor(Math.random() * 80); if (seed.indexOf(k) < 0) seed.push(k); }
+  seed.forEach(function(k){ if (G.avl) E.avlInsert(G.tree, k); else E.bstInsert(G.tree, k); });
+  var title = 'Onda ' + G.wave, sub = G.avl ? 'Árvore AVL: mantenha cada sala equilibrada.' : 'Árvore binária de busca: menor à esquerda, maior à direita.';
+  if (G.wave === 3 || (G.avl && G.stats.inserted === 0 && G.stats.dec === 0)) { title = 'Onda ' + G.wave + ' · A Balança desperta'; sub = 'Agora a árvore é AVL. Quando tremer: 1ª seta = lado que pesa, 2ª = lado do filho.'; }
+  G.banner = { title: title, sub: sub, t: 0, dur: G.wave === 3 ? 3.4 : 2.0 };
+  G.state = 'intro';
+  $('padmid').innerHTML = '<span>' + (G.avl ? 'Desequilíbrio: <b>1ª seta</b> lado que pesa, <b>2ª</b> lado do filho.' : 'Menor à <b>esquerda</b>, maior à <b>direita</b>.') + '</span>';
+  hud();
+}
+
+/* ---------- layout ---------- */
+var L = null;
+function layout(){
+  var ns = E.nodes(G.tree), n = ns.length, maxD = 0, pos = {}, dep = {};
+  ns.forEach(function(nd){ var d = E.depth(nd); dep[nd.key] = d; if (d > maxD) maxD = d; });
+  var s = Math.min(72, (W - 30) / (n + 1)), top = Math.max(112, H * 0.2);
+  var dy = Math.min(86, (H - top - 56) / (maxD + 1.25));
+  var off = (W - (n + 1) * s) / 2;
+  ns.forEach(function(nd, i){ pos[nd.key] = { x: off + (i + 1) * s, y: top + dep[nd.key] * dy }; });
+  var nw = Math.max(26, Math.min(50, s * 0.8));
+  L = { pos: pos, s: s, dy: dy, nw: nw, nh: nw * 0.76, top: top };
+  return L;
+}
+function dpos(k){ return G.disp[k] || L.pos[k]; }
+function slotPos(parentKey, side){
+  if (parentKey === null) return { x: W / 2, y: L.top };
+  var p = dpos(parentKey); return { x: p.x + (side === 'L' ? -L.s / 2 : L.s / 2), y: p.y + L.dy };
+}
+function targetPos(tg){
+  if (tg.kind === 'node') { var p = dpos(tg.key); return { x: p.x, y: p.y - L.nh * 0.5 - orbR() - 4 }; }
+  return slotPos(tg.parent, tg.side);
+}
+function orbR(){ return Math.max(13, L.nh * 0.56); }
+
+/* ---------- chaves ---------- */
+function nextKey(){
+  var have = {}; E.keys(G.tree).forEach(function(k){ have[k] = 1; });
+  var c = []; for (var k = 1; k <= 99; k++) if (!have[k]) c.push(k);
+  if (G.avl && Math.random() < 0.6) {
+    var unb = c.filter(function(k){ var t = E.clone(G.tree), x = E.bstInsert(t, k); return !!E.lowestUnbalanced(x); });
+    if (unb.length) return pick(unb);
+  }
+  var sz = E.size(G.tree), ok = c.filter(function(k){ var l = E.insertPath(G.tree, k).length; return l >= Math.min(2, sz) && l <= 5; });
+  return pick(ok.length ? ok : c);
+}
+function decideTime(){ return G.practice ? Infinity : Math.max(0.85, 2.5 - 0.2 * (G.wave - 1)); }
+function balanceTime(){ return G.practice ? Infinity : Math.max(2.6, 6 - 0.45 * (G.wave - 3)); }
+
+function spawn(){
+  var key = nextKey(); G.spawned++;
+  var tg = G.tree.root ? { kind:'node', key: G.tree.root.key } : { kind:'slot', parent:null, side:null };
+  G.orb = { key: key, phase:'travel', from:{ x: W / 2, y: -30 }, tg: tg, t: 0, dur: 0.55, x: W / 2, y: -30, timer: 0, timerMax: 0 };
+  callout('Leve a chave <b>' + key + '</b> até a vaga certa.');
+}
+
+/* ---------- entrada ---------- */
+function press(dir){
+  flashPad(dir);
+  if (!G || G.state !== 'play') return;
+  var o = G.orb;
+  if (o && o.phase === 'decide') {
+    var node = E.find(G.tree, o.tg.key), need = o.key < node.key ? 'L' : 'R';
+    G.stats.dec++;
+    if (dir === need) {
+      G.stats.ok++; G.combo++; G.stats.bestCombo = Math.max(G.stats.bestCombo, G.combo);
+      var pts = 5 * mult(); G.score += pts; SFX.step(G.combo);
+      sparks(o.x, o.y, COL.torch, 6);
+      var child = need === 'L' ? node.left : node.right;
+      o.from = { x: o.x, y: o.y }; o.t = 0; o.dur = 0.26; o.phase = 'travel';
+      o.tg = child ? { kind:'node', key: child.key } : { kind:'slot', parent: node.key, side: need };
+      hud(); return;
+    }
+    fail(o.key + (o.key < node.key ? ' < ' : ' > ') + node.key + ': o caminho era ' + (need === 'L' ? '← esquerda' : '→ direita') + '.', o.x, o.y, Hints.explainStep(G.tree, o.key, node.key, dir));
+    G.orb = null; G.spawnDelay = 1.0; return;
+  }
+  if (G.bal) {
+    var b = G.bal, want = b.cs[b.seq.length];
+    b.seq.push(dir); balanceCallout();
+    if (dir !== want) {
+      var z = E.find(G.tree, b.z), heavy = b.cs[0], child2 = heavy === 'L' ? z.left : z.right;
+      var why = b.seq.length === 1 ? 'A sala ' + b.z + ' pesava à ' + (heavy === 'L' ? 'esquerda' : 'direita') + ': o caso era ' + b.cs + '.'
+                                   : b.key + ' entrou à ' + (b.cs[1] === 'L' ? 'esquerda' : 'direita') + ' do filho ' + child2.key + ': o caso era ' + b.cs + '.';
+      var zp = dpos(b.z); fail(why, zp.x, zp.y, Hints.explainAVL(G.tree, b.z, b.key, b.seq));
+      G.stats.rot++; rotate(b, false); return;
+    }
+    if (b.seq.length === 2) { G.stats.rot++; G.stats.rotOk++; rotate(b, true); }
+  }
+}
+function rotate(b, ok){
+  var z = E.find(G.tree, b.z), zp = dpos(b.z);
+  E.avlApply(G.tree, z, b.cs); G.bal = null; G.shake = Math.max(G.shake, 4);
+  SFX.rot();
+  if (ok) {
+    G.combo += 2; G.stats.bestCombo = Math.max(G.stats.bestCombo, G.combo);
+    var pts = 50 * mult(); G.score += pts;
+    sparks(zp.x, zp.y, COL.torch, 26); sparks(zp.x, zp.y, COL.moss, 14);
+    float(zp.x, zp.y - 30, b.cs + '!  +' + pts, COL.torch, 26);
+    toast('Caso ' + b.cs + ': equilíbrio restaurado.', false);
+  } else float(zp.x, zp.y - 30, 'era ' + b.cs, COL.ember, 22);
+  G.spawnDelay = 0.7; hud(); hideCallout();
+}
+function fail(msg, x, y, exp){
+  G.lives--; G.combo = 0; G.errWave++; G.shake = reduced ? 0 : 12;
+  G.mistakes.push(msg); SFX.bad();
+  sparks(x, y, COL.ember, 22);
+  toast(msg, true); hud();
+  if (G.lives <= 0) { G.state = 'dying'; G.dieT = 0; hideCallout(); SFX.over(); }
+  if (exp && G.explain) { G.modal = true; exp.onClose = function(){ if (G) G.modal = false; }; if (G.lives <= 0) exp.button = 'Ver o resultado'; Hints.modal(exp); }
+}
+
+/* ---------- dicas ---------- */
+function hintCtx(){
+  if (!G || G.state !== 'play') return null;
+  if (G.orb && G.orb.phase === 'decide') return 'd:' + G.orb.key + ':' + G.orb.tg.key;
+  if (G.bal) return 'b:' + G.bal.z + ':' + G.bal.seq.length;
+  return null;
+}
+function askHint(){
+  var c = hintCtx(); if (!c) { toast('A dica aparece quando há uma decisão na sua frente.', false); return; }
+  if (G.hint.ctx !== c) G.hint = { ctx: c, level: 0 };
+  if (G.hint.level >= 2) return;
+  G.hint.level++; G.stats.hints++;
+  var cost = G.practice ? 0 : (G.hint.level === 1 ? 10 : 25);
+  G.score = Math.max(0, G.score - cost);
+  var txt;
+  if (G.orb && G.orb.phase === 'decide') { var o = G.orb; txt = Hints.step(G.tree, o.key, o.tg.key)[G.hint.level - 1]; if (isFinite(o.timerMax)) { o.timer += 1.5; o.timerMax = Math.max(o.timerMax, o.timer); } }
+  else { var b = G.bal; txt = Hints.avl(G.tree, b.z, b.key, b.seq.length >= 1)[G.hint.level - 1]; if (isFinite(b.timerMax)) { b.timer += 2; b.timerMax = Math.max(b.timerMax, b.timer); } }
+  var hb = $('hintbox'); hb.innerHTML = '<b>Dica ' + G.hint.level + ' de 2' + (cost ? ' · −' + cost + ' pontos' : '') + '</b>' + txt.replace(/&/g, '&amp;').replace(/</g, '&lt;'); hb.hidden = false;
+  $('hintCost').textContent = G.hint.level === 1 ? '2ª camada: −25 pontos e mais tempo' : 'Camadas esgotadas nesta jogada';
+  hud();
+}
+function syncHint(){
+  var c = hintCtx();
+  if (G && G.hint.ctx && G.hint.ctx !== c) { G.hint = { ctx:null, level:0 }; $('hintbox').hidden = true; $('hintCost').textContent = '1ª camada: −10 pontos e +1,5 s'; }
+}
+
+/* ---------- atualização ---------- */
+function update(dt){
+  G.time += dt; syncHint();
+  layout();
+  for (var k in L.pos) { var t = L.pos[k], d = G.disp[k]; if (!d) G.disp[k] = { x: t.x, y: t.y }; else { var a = Math.min(1, dt * 9); d.x += (t.x - d.x) * a; d.y += (t.y - d.y) * a; } }
+  for (var f in G.fresh) { G.fresh[f] -= dt; if (G.fresh[f] <= 0) delete G.fresh[f]; }
+  G.shake = Math.max(0, G.shake - dt * 30);
+  G.parts.forEach(function(p){ p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 340 * dt; p.life -= dt; });
+  G.parts = G.parts.filter(function(p){ return p.life > 0; });
+  G.floats.forEach(function(p){ p.y -= 34 * dt; p.life -= dt; });
+  G.floats = G.floats.filter(function(p){ return p.life > 0; });
+
+  if (G.state === 'intro') {
+    G.banner.t += dt;
+    if (G.banner.t >= G.banner.dur) { G.banner = null; G.state = 'play'; G.spawnDelay = 0.3; }
+    return;
+  }
+  if (G.state === 'dying') { G.dieT += dt; if (G.dieT > 1.1) gameOver(); return; }
+  if (G.state === 'clear') { G.banner.t += dt; if (G.banner.t >= G.banner.dur) nextWave(); return; }
+  if (G.state !== 'play') return;
+
+  var o = G.orb;
+  if (o) {
+    if (o.phase === 'travel') {
+      o.t += dt / o.dur; var tp = targetPos(o.tg), e = Math.min(1, o.t), ee = 1 - Math.pow(1 - e, 3);
+      o.x = o.from.x + (tp.x - o.from.x) * ee; o.y = o.from.y + (tp.y - o.from.y) * ee;
+      if (Math.random() < 0.6) G.parts.push({ x: o.x + rnd(-4, 4), y: o.y + rnd(-4, 4), vx: rnd(-15, 15), vy: rnd(-40, 0), life: 0.35, max: 0.35, c: COL.torch, s: 2.2, ng: true });
+      if (o.t >= 1) {
+        if (o.tg.kind === 'node') { o.phase = 'decide'; o.timerMax = decideTime(); o.timer = o.timerMax; }
+        else land();
+      }
+    } else if (o.phase === 'decide') {
+      var tp2 = targetPos(o.tg); o.x = tp2.x; o.y = tp2.y + Math.sin(G.time * 6) * 1.5;
+      o.timer -= dt;
+      if (o.timer <= 0) { var nd = E.find(G.tree, o.tg.key), need = o.key < nd.key ? 'L' : 'R'; G.stats.dec++;
+        fail('Tempo! ' + o.key + (o.key < nd.key ? ' < ' : ' > ') + nd.key + ': era ' + (need === 'L' ? '← esquerda' : '→ direita') + '.', o.x, o.y, Hints.explainStep(G.tree, o.key, nd.key, null));
+        G.orb = null; G.spawnDelay = 1.0; }
+    }
+  } else if (G.bal) {
+    G.bal.timer -= dt; G.shake = Math.max(G.shake, reduced ? 0 : 2.2);
+    if (G.bal.timer <= 0) { var zp = dpos(G.bal.z); fail('Tempo! A sala ' + G.bal.z + ' pedia o caso ' + G.bal.cs + '.', zp.x, zp.y, Hints.explainAVL(G.tree, G.bal.z, G.bal.key, G.bal.seq)); G.stats.rot++; if (G.state === 'play' || G.state === 'dying') rotate(G.bal, false); }
+  } else {
+    if (G.spawned >= G.perWave) { waveClear(); return; }
+    G.spawnDelay -= dt; if (G.spawnDelay <= 0) spawn();
+  }
+}
+function land(){
+  var o = G.orb, tg = o.tg, sp = slotPos(tg.parent, tg.side);
+  var x = E.bstInsert(G.tree, o.key);
+  G.disp[o.key] = { x: sp.x, y: sp.y }; G.fresh[o.key] = 1.2;
+  G.stats.inserted++;
+  var pts = 20 * mult(); G.score += pts; SFX.land();
+  sparks(sp.x, sp.y, COL.moss, 18); float(sp.x, sp.y - 26, '+' + pts, COL.moss, 18);
+  G.orb = null; hud();
+  if (G.avl) {
+    var z = E.lowestUnbalanced(x);
+    if (z) { G.bal = { z: z.key, key: o.key, cs: E.avlCase(z, o.key), seq: [], timerMax: balanceTime(), timer: balanceTime() }; SFX.quake(); balanceCallout(); return; }
+  }
+  G.spawnDelay = 0.45; hideCallout();
+}
+function waveClear(){
+  G.stats.waves = G.wave; G.stats.waveWins = (G.stats.waveWins || 0) + 1;
+  var bonus = 100 * G.wave; G.score += bonus;
+  var perfect = G.errWave === 0, extra = '';
+  if (perfect && G.lives < 5) { G.lives++; extra = ' · onda perfeita: +1 vida'; }
+  G.state = 'clear'; G.banner = { title: 'Onda ' + G.wave + ' vencida', sub: '+' + bonus + ' pontos' + extra, t: 0, dur: 2.0 };
+  SFX.wave(); hud(); hideCallout();
+  for (var i = 0; i < 40; i++) G.parts.push({ x: W / 2 + rnd(-200, 200), y: H * 0.35 + rnd(-40, 40), vx: rnd(-90, 90), vy: rnd(-260, -60), life: rnd(0.8, 1.5), max: 1.5, c: pick([COL.torch, COL.moss, COL.ink]), s: rnd(2, 4) });
+}
+function gameOver(){
+  G.state = 'over';
+  var rec = !G.practice && G.score > best;
+  if (rec) { best = G.score; saveBest(); }
+  $('finalScore').textContent = G.score.toLocaleString('pt-BR');
+  $('newRec').textContent = G.practice ? 'Modo treino: o recorde não conta.' : rec ? 'Novo recorde!' : 'Recorde: ' + best.toLocaleString('pt-BR');
+  var acc = G.stats.dec ? Math.round(100 * G.stats.ok / G.stats.dec) : 0;
+  $('finalStats').innerHTML = [['Ondas vencidas', G.stats.waveWins || 0], ['Chaves inseridas', G.stats.inserted], ['Precisão nas salas', acc + '%'], ['Maior combo', G.stats.bestCombo], ['Rotações certas', G.stats.rotOk + '/' + G.stats.rot], ['Dicas usadas', G.stats.hints]]
+    .map(function(a){ return '<div><span>' + a[0] + '</span><b>' + a[1] + '</b></div>'; }).join('');
+  var ms = G.mistakes.slice(-6);
+  $('review').hidden = !ms.length;
+  $('reviewList').innerHTML = ms.map(function(m){ return '<li>' + m.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>'; }).join('');
+  $('overOv').hidden = false; $('againBtn').focus();
+  hud();
+}
+
+/* ---------- efeitos ---------- */
+function sparks(x, y, c, n){ if (reduced) n = Math.ceil(n / 3); for (var i = 0; i < n; i++) { var a = rnd(0, Math.PI * 2), v = rnd(60, 220); G.parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: rnd(0.4, 0.9), max: 0.9, c: c, s: rnd(2, 4) }); } }
+function float(x, y, txt, c, size){ G.floats.push({ x: x, y: y, txt: txt, c: c, size: size || 18, life: 1.1, max: 1.1 }); }
+var toastT = null;
+function toast(msg, bad){ var t = $('toast'); t.textContent = msg; t.className = 'toast show' + (bad ? ' bad' : ''); clearTimeout(toastT); toastT = setTimeout(function(){ t.className = 'toast' + (bad ? ' bad' : ''); }, bad ? 2600 : 1600); }
+function callout(html, alarm){ var c = $('callout'); c.innerHTML = html; c.hidden = false; c.className = 'callout' + (alarm ? ' alarm' : ''); }
+function hideCallout(){ $('callout').hidden = true; }
+function balanceCallout(){
+  var b = G.bal; if (!b) return;
+  var s = function(i){ var v = b.seq[i]; return '<span class="slot' + (v ? ' filled' : '') + '">' + (v ? (v === 'L' ? '←' : '→') : '?') + '</span>'; };
+  callout('Desequilíbrio em <b>' + b.z + '</b>! Lado que pesa' + s(0) + ' lado do filho' + s(1), true);
+}
+function flashPad(dir){ var b = $(dir === 'L' ? 'btnL' : 'btnR'); b.classList.add('flash'); setTimeout(function(){ b.classList.remove('flash'); }, 110); }
+function hud(){
+  if (!G) return;
+  $('score').textContent = G.score.toLocaleString('pt-BR');
+  var m = mult(); $('combo').textContent = '×' + m + (G.combo ? ' · ' + G.combo : ''); $('combo').className = m > 1 ? 'hot' : '';
+  $('wave').textContent = G.wave; $('best').textContent = best.toLocaleString('pt-BR');
+  var h = ''; for (var i = 0; i < Math.max(3, G.lives); i++) h += '<span class="' + (i < G.lives ? '' : 'off') + '">♥</span>';
+  $('hearts').innerHTML = h; $('hearts').setAttribute('aria-label', G.lives + ' vidas');
+}
+
+/* ---------- desenho ---------- */
+function rr(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function draw(){
+  ctx.save();
+  ctx.fillStyle = COL.bg; ctx.fillRect(0, 0, W, H);
+  var g = ctx.createRadialGradient(W / 2, H * 0.1, 10, W / 2, H * 0.1, Math.max(W, H) * 0.8);
+  g.addColorStop(0, 'rgba(242,169,59,0.09)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  if (!G) { ctx.restore(); return; }
+  layout();
+  for (var k0 in L.pos) if (!G.disp[k0]) G.disp[k0] = { x: L.pos[k0].x, y: L.pos[k0].y };
+  if (G.shake > 0) ctx.translate(rnd(-G.shake, G.shake), rnd(-G.shake, G.shake));
+  // portal
+  ctx.strokeStyle = 'rgba(242,169,59,0.25)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(W / 2, 22, 34, 8, 0, 0, Math.PI * 2); ctx.stroke();
+
+  var ns = E.nodes(G.tree);
+  ctx.strokeStyle = COL.edge; ctx.lineWidth = 3;
+  ns.forEach(function(n){ if (n.parent) { var a = dpos(n.parent.key), b = dpos(n.key); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } });
+
+  var decideKey = G.orb && G.orb.phase === 'decide' ? G.orb.tg.key : null;
+  var balZ = G.bal ? G.bal.z : null;
+  var nw = L.nw, nh = L.nh, fs = Math.max(12, Math.round(nh * 0.48));
+  ns.forEach(function(n){
+    var p = dpos(n.key);
+    ctx.save();
+    var stroke = COL.line, lw = 2, fill = COL.stone;
+    if (G.fresh[n.key]) { stroke = COL.moss; lw = 3.5; }
+    if (n.key === decideKey) { stroke = COL.torch; lw = 4; ctx.shadowColor = 'rgba(242,169,59,0.8)'; ctx.shadowBlur = 14; }
+    if (n.key === balZ) { var pulse = 0.5 + 0.5 * Math.sin(G.time * 12); stroke = COL.ember; lw = 4; fill = 'rgba(229,96,74,' + (0.25 + 0.35 * pulse) + ')'; ctx.shadowColor = 'rgba(229,96,74,0.9)'; ctx.shadowBlur = 10 + 10 * pulse; }
+    rr(p.x - nw / 2, p.y - nh / 2, nw, nh, 7); ctx.fillStyle = fill; ctx.fill();
+    ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = COL.ink; ctx.font = '700 ' + fs + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(n.key, p.x, p.y + 1);
+    ctx.restore();
+  });
+
+  // dicas de lado no nó em decisão
+  if (decideKey !== null && !G.practice) {
+    var dp = dpos(decideKey), al = 0.35 + 0.25 * Math.sin(G.time * 8);
+    ctx.fillStyle = 'rgba(242,169,59,' + al + ')'; ctx.font = '800 ' + Math.round(fs * 1.1) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('◀', dp.x - nw * 0.95, dp.y + nh * 0.55); ctx.fillText('▶', dp.x + nw * 0.95, dp.y + nh * 0.55);
+  }
+
+  // orbe
+  var o = G.orb;
+  if (o) {
+    var r = orbR();
+    ctx.save();
+    ctx.shadowColor = 'rgba(242,169,59,0.9)'; ctx.shadowBlur = 18;
+    var og = ctx.createRadialGradient(o.x - r * 0.3, o.y - r * 0.3, 2, o.x, o.y, r);
+    og.addColorStop(0, '#FFE2A8'); og.addColorStop(1, '#D9871C');
+    ctx.fillStyle = og; ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#1d1408'; ctx.font = '800 ' + Math.round(r * 0.95) + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(o.key, o.x, o.y + 1);
+    if (o.phase === 'decide' && isFinite(o.timerMax)) {
+      var fr = Math.max(0, o.timer / o.timerMax);
+      ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = fr < 0.35 ? COL.ember : COL.torch;
+      ctx.beginPath(); ctx.arc(o.x, o.y, r + 6, -Math.PI / 2, -Math.PI / 2 + fr * Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // relógio do desequilíbrio
+  if (G.bal && isFinite(G.bal.timerMax)) {
+    var zp = dpos(G.bal.z), fr2 = Math.max(0, G.bal.timer / G.bal.timerMax);
+    ctx.lineWidth = 4; ctx.strokeStyle = COL.ember; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(zp.x, zp.y, nw * 0.85, -Math.PI / 2, -Math.PI / 2 + fr2 * Math.PI * 2); ctx.stroke();
+  }
+
+  // partículas
+  G.parts.forEach(function(p){ ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); });
+  ctx.globalAlpha = 1;
+  G.floats.forEach(function(p){ ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.c; ctx.font = '800 ' + p.size + 'px ' + FONT; ctx.textAlign = 'center'; ctx.fillText(p.txt, p.x, p.y); });
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // faixa de onda
+  if (G.banner) {
+    var b = G.banner, a = Math.min(1, b.t / 0.25, (b.dur - b.t) / 0.3);
+    ctx.save(); ctx.globalAlpha = Math.max(0, a);
+    ctx.fillStyle = 'rgba(16,15,23,0.82)'; ctx.fillRect(0, H * 0.36, W, 96);
+    ctx.strokeStyle = COL.torch; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, H * 0.36); ctx.lineTo(W, H * 0.36); ctx.moveTo(0, H * 0.36 + 96); ctx.lineTo(W, H * 0.36 + 96); ctx.stroke();
+    ctx.fillStyle = COL.torch; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = Math.min(40, W / 14) + 'px ' + DFONT; ctx.fillText(b.title, W / 2, H * 0.36 + 36);
+    ctx.fillStyle = COL.ink; ctx.font = '500 ' + Math.min(17, W / 30) + 'px ' + FONT; ctx.fillText(b.sub, W / 2, H * 0.36 + 72);
+    ctx.restore();
+  }
+}
+
+/* ---------- laço ---------- */
+var last = 0, speed = 1;
+function loop(now){
+  var dt = Math.min(0.05, (now - (last || now)) / 1000) * speed; last = now;
+  if (G && G.state !== 'paused' && G.state !== 'over' && !G.modal) update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------- controles ---------- */
+function start(){
+  $('hintbox').hidden = true;
+  audioInit(); if (AC && AC.state === 'suspended') AC.resume();
+  newGame($('practice').checked, +$('startWave').value || 1);
+  ['titleOv', 'overOv', 'pauseOv'].forEach(function(id){ $(id).hidden = true; });
+  $('toast').className = 'toast'; hideCallout();
+}
+function togglePause(){
+  if (!G) return;
+  if (G.state === 'paused') { G.state = G.prevState; $('pauseOv').hidden = true; }
+  else if (G.state === 'play' || G.state === 'intro' || G.state === 'clear') { G.prevState = G.state; G.state = 'paused'; $('pauseOv').hidden = false; $('resumeBtn').focus(); }
+}
+function toHome(){ G = null; ['overOv', 'pauseOv'].forEach(function(id){ $(id).hidden = true; }); hideCallout(); $('titleOv').hidden = false; $('bestLine').textContent = best ? 'Recorde neste navegador: ' + best.toLocaleString('pt-BR') + ' pontos' : ''; $('startBtn').focus({ preventScroll: true }); }
+$('startBtn').addEventListener('click', start);
+$('againBtn').addEventListener('click', start);
+$('homeBtn').addEventListener('click', toHome);
+$('resumeBtn').addEventListener('click', togglePause);
+$('quitBtn').addEventListener('click', function(){ $('pauseOv').hidden = true; G.lives = 0; gameOver(); });
+$('pauseBtn').addEventListener('click', togglePause);
+$('hintBtn').addEventListener('click', askHint);
+$('muteBtn').addEventListener('click', function(){ muted = !muted; this.setAttribute('aria-pressed', muted); this.innerHTML = (muted ? 'Som desligado' : 'Som ligado') + ' <kbd>M</kbd>'; });
+['L', 'R'].forEach(function(d){
+  var b = $('btn' + d);
+  b.addEventListener('pointerdown', function(e){ e.preventDefault(); press(d); });
+  b.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); press(d); } });
+});
+document.addEventListener('keydown', function(e){
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  var k = e.key;
+  if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); press('L'); return; }
+  if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); press('R'); return; }
+  if (k === 'p' || k === 'P' || k === 'Escape') { togglePause(); return; }
+  if (k === 'm' || k === 'M') { $('muteBtn').click(); return; }
+  if (k === 'h' || k === 'H') { askHint(); return; }
+  if ((k === 'Enter' || k === ' ') && (!$('titleOv').hidden || !$('overOv').hidden) && !(e.target.closest && e.target.closest('button,input,select'))) { e.preventDefault(); start(); }
+});
+document.addEventListener('visibilitychange', function(){ if (document.hidden && G && !G.modal && (G.state === 'play' || G.state === 'intro')) togglePause(); });
+
+toHome();
+window.__arcade = { get G(){ return G; }, E: E, press: press, hint: askHint, setSpeed: function(s){ speed = s; } };
+})();
+</script>
+</body>
+</html>

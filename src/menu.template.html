@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Masmorra das Árvores · Jogos da Era 03</title>
+<style>
+:root{
+  --bg:#16151F; --stone:#23222F; --stone-2:#2E2C3D; --line:#45425A;
+  --ink:#ECE3CF; --muted:#A9A1B8; --torch:#F2A93B; --ember:#E5604A; --moss:#7CC39A; --mana:#6FA8F2; --curse:#B46BE0;
+  --display:'IM Fell English SC', Georgia, serif;
+  --body:'Alegreya Sans', 'Trebuchet MS', Verdana, sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;
+  background-image:radial-gradient(1200px 520px at 30% -10%, #2a2440 0%, transparent 60%);background-attachment:fixed}
+button,a{font-family:var(--body)}
+button{cursor:pointer;color:inherit}
+button:focus-visible,a:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* menu */
+.menu{max-width:1180px;margin:0 auto;padding:28px 20px 36px}
+.hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+.era{margin:0;color:var(--torch);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.hero h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,6vw,64px);line-height:1;margin:8px 0 10px;text-wrap:balance}
+.hero p{margin:0;color:var(--muted);max-width:64ch}
+.games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.game{background:var(--stone);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,border-color .15s}
+.game:hover{border-color:var(--torch);transform:translateY(-2px)}
+.art{height:150px;background:#100F17;border-bottom:1px solid var(--line);display:grid;place-items:center}
+.art svg{width:100%;height:100%}
+.body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.kind{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800}
+.game h2{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.05;margin:0}
+.game p{margin:0;color:var(--muted);font-size:15.5px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.tag{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--muted)}
+.keys{font-size:14px;color:var(--muted)}
+kbd{font-family:var(--body);font-size:12px;font-weight:700;border:1px solid currentColor;border-radius:5px;padding:0 5px;opacity:.85}
+.play{margin-top:auto;align-self:flex-start;background:var(--torch);color:#1d1408;border:none;border-radius:10px;padding:11px 22px;font-weight:800;font-size:17px}
+.play:hover{filter:brightness(1.08)}
+.tips{margin-top:22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tip{background:transparent;border:1px dashed var(--line);border-radius:14px;padding:12px 16px;font-size:15px;color:var(--muted)}
+.tip b{color:var(--ink)}
+.foot{margin-top:22px;color:var(--muted);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.foot button{background:var(--stone-2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px}
+
+/* jogo */
+.player{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+.bar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line);background:#1B1A26}
+.bar h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar button{background:var(--stone-2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px}
+.bar button:hover{border-color:var(--torch)}
+.bar .sw{display:flex;gap:6px}
+.bar .sw button[aria-current="true"]{border-color:var(--torch);color:var(--torch)}
+iframe{flex:1;width:100%;border:0;background:var(--bg)}
+
+@media (max-width:900px){ .games,.tips{grid-template-columns:1fr} .art{height:120px} }
+@media (max-width:560px){ .bar .sw{display:none} .bar .fs{display:none} }
+@media (prefers-reduced-motion: reduce){ .game{transition:none} .game:hover{transform:none} }
+</style>
+</head>
+<body>
+<main class="menu" id="menu">
+  <header class="hero">
+    <div>
+      <p class="era">Trilha de Estruturas · Era 03 · Árvores de busca</p>
+      <h1>Masmorra das Árvores</h1>
+      <p>Três jogos para praticar BST, AVL, rubro-negra, splay e percursos. Todos têm dica em camadas pela tecla <kbd>H</kbd>: a primeira diz o que olhar, a segunda mostra o raciocínio.</p>
+    </div>
+  </header>
+
+  <section class="games" aria-label="Jogos">
+    <article class="game">
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 150">
+        <ellipse cx="150" cy="18" rx="30" ry="7" fill="none" stroke="#F2A93B" stroke-opacity=".4" stroke-width="2"/>
+        <line x1="150" y1="72" x2="95" y2="112" stroke="#5B5674" stroke-width="3"/><line x1="150" y1="72" x2="205" y2="112" stroke="#5B5674" stroke-width="3"/>
+        <rect x="128" y="58" width="44" height="30" rx="6" fill="#23222F" stroke="#F2A93B" stroke-width="3"/><text x="150" y="74" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">50</text>
+        <rect x="73" y="100" width="44" height="30" rx="6" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="95" y="116" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">31</text>
+        <rect x="183" y="100" width="44" height="30" rx="6" fill="#23222F" stroke="#7CC39A" stroke-width="3"/><text x="205" y="116" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">72</text>
+        <circle cx="150" cy="38" r="15" fill="#F2A93B"/><text x="150" y="39" fill="#1d1408" font-family="Alegreya Sans, sans-serif" font-weight="800" font-size="14" text-anchor="middle" dominant-baseline="central">64</text>
+        <circle cx="150" cy="38" r="20" fill="none" stroke="#F2A93B" stroke-width="3" stroke-dasharray="80 200" transform="rotate(-90 150 38)"/>
+        <text x="112" y="80" fill="#F2A93B" fill-opacity=".45" font-size="18" text-anchor="middle">◀</text><text x="188" y="80" fill="#F2A93B" fill-opacity=".8" font-size="18" text-anchor="middle">▶</text>
+      </svg></div>
+      <div class="body">
+        <span class="kind" style="color:var(--torch)">Arcade · individual</span>
+        <h2>A Queda das Chaves</h2>
+        <p>As chaves despencam e você decide o caminho de cada uma antes do anel apagar. A partir da onda 3 a árvore vira AVL e as rotações também são feitas com as setas.</p>
+        <div class="tags"><span class="tag">BST</span><span class="tag">AVL</span><span class="tag">combo e recorde</span><span class="tag">modo treino</span></div>
+        <span class="keys"><kbd>←</kbd> <kbd>→</kbd> decidir · <kbd>H</kbd> dica · <kbd>P</kbd> pausa</span>
+        <button class="play" data-game="queda">Jogar</button>
+      </div>
+    </article>
+
+    <article class="game">
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 150">
+        <line x1="70" y1="50" x2="40" y2="100" stroke="#5B5674" stroke-width="3"/><line x1="70" y1="50" x2="105" y2="100" stroke="#5B5674" stroke-width="3"/>
+        <rect x="50" y="36" width="40" height="28" rx="6" fill="#0C0B12" stroke="#8C87A6" stroke-width="2"/>
+        <rect x="20" y="88" width="40" height="28" rx="6" fill="#B4363A" stroke="#F08A86" stroke-width="2"/>
+        <rect x="85" y="88" width="40" height="28" rx="6" fill="#B4363A" stroke="#B46BE0" stroke-width="4"/>
+        <g transform="translate(105 82)"><path d="M-9 -26 L9 -26 L13 -2 L-13 -2 Z" fill="#9C2F2A"/><rect x="-8" y="-26" width="16" height="22" rx="4" fill="#B9B4CC"/><circle cx="0" cy="-33" r="8" fill="#D7D2E6"/><rect x="-6" y="-34" width="12" height="2.5" fill="#16151F"/><path d="M0 -41 Q10 -50 14 -40 Q7 -44 1 -39 Z" fill="#F2A93B"/><rect x="10" y="-44" width="3" height="22" fill="#E6CCFF" transform="rotate(-25 11 -22)"/></g>
+        <g transform="translate(210 20)"><path d="M40 4 Q74 14 72 116 L8 116 Q6 14 40 4 Z" fill="#3A2B4A"/><ellipse cx="40" cy="40" rx="17" ry="21" fill="#1B1424"/><ellipse cx="40" cy="40" rx="12" ry="15" fill="#E8E0D0"/><circle cx="35" cy="38" r="3" fill="#E5604A"/><circle cx="45" cy="38" r="3" fill="#E5604A"/><path d="M26 20 L29 10 L34 18 L40 6 L46 18 L51 10 L54 20 Z" fill="#F2A93B"/></g>
+        <rect x="150" y="128" width="120" height="8" rx="4" fill="#2E2C3D"/><rect x="150" y="128" width="80" height="8" rx="4" fill="#B46BE0"/>
+      </svg></div>
+      <div class="body">
+        <span class="kind" style="color:var(--curse)">RPG por turnos · individual</span>
+        <h2>O Herói da Cripta</h2>
+        <p>O herói anda pelas salas e enfrenta três chefes. Passo errado é armadilha, e recolorir, girar, zig e zag viram feitiços com custo de mana.</p>
+        <div class="tags"><span class="tag">Rubro-negra</span><span class="tag">Splay</span><span class="tag">3 capítulos</span></div>
+        <span class="keys"><kbd>←</kbd> <kbd>→</kbd> andar · <kbd>1</kbd>–<kbd>5</kbd> feitiços · <kbd>H</kbd> dica · <kbd>E</kbd> meditar · <kbd>Q</kbd> poção</span>
+        <button class="play" data-game="heroi">Jogar</button>
+      </div>
+    </article>
+
+    <article class="game">
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 150">
+        <rect x="40" y="22" width="104" height="44" rx="8" fill="#F2A93B"/><path d="M58 52 L66 36 L74 52 Z" fill="#17120A"/>
+        <rect x="156" y="22" width="104" height="44" rx="8" fill="#E5604A"/><path d="M182 44 L190 36 L198 44 L190 52 Z" fill="#17120A"/>
+        <rect x="40" y="74" width="104" height="44" rx="8" fill="#6FA8F2"/><circle cx="66" cy="96" r="8" fill="#17120A"/>
+        <rect x="156" y="74" width="104" height="44" rx="8" fill="#7CC39A" stroke="#ECE3CF" stroke-width="4"/><rect x="182" y="88" width="16" height="16" fill="#17120A"/>
+        <text x="236" y="98" fill="#17120A" font-family="Alegreya Sans, sans-serif" font-weight="800" font-size="20" text-anchor="middle" dominant-baseline="central">✓</text>
+        <rect x="40" y="128" width="220" height="8" rx="4" fill="#2E2C3D"/><rect x="40" y="128" width="140" height="8" rx="4" fill="#F2A93B"/>
+      </svg></div>
+      <div class="body">
+        <span class="kind" style="color:var(--moss)">Quiz no telão · turma toda</span>
+        <h2>Arena das Árvores</h2>
+        <p>Perguntas sorteadas com a árvore desenhada, cronômetro, revelação com explicação, placar e pódio. Neste arquivo roda no modo equipes: as equipes respondem com cartões A, B, C e D.</p>
+        <div class="tags"><span class="tag">BST</span><span class="tag">Percursos</span><span class="tag">AVL</span><span class="tag">Rubro-negra</span><span class="tag">Splay</span></div>
+        <span class="keys"><kbd>H</kbd> mostra a dica no telão para todos</span>
+        <button class="play" data-game="arena">Jogar</button>
+      </div>
+    </article>
+  </section>
+
+  <section class="tips" aria-label="Sugestões de uso">
+    <div class="tip"><b>Ordem sugerida.</b> Comece pela Queda das Chaves no modo treino, siga com o Herói da Cripta e feche a aula com a Arena em equipes.</div>
+    <div class="tip"><b>Em sala.</b> Use o botão Tela cheia no projetor. A Arena aceita 2 a 4 equipes, e você escolhe os assuntos e o tempo.</div>
+    <div class="tip"><b>Progresso.</b> Recordes, estrelas e capítulos ficam salvos neste navegador. Em computador compartilhado, cada aluno começa do zero.</div>
+  </section>
+  <p class="foot"><span>Funciona sem internet. A sala ao vivo da Arena, com os alunos respondendo pelo celular, está na versão publicada no claude.ai.</span></p>
+</main>
+
+<section class="player" id="player" hidden>
+  <div class="bar">
+    <button id="back">← Menu</button>
+    <h2 id="gameTitle"></h2>
+    <div class="sw" role="group" aria-label="Trocar de jogo">
+      <button data-switch="queda">Queda</button><button data-switch="heroi">Herói</button><button data-switch="arena">Arena</button>
+    </div>
+    <button class="fs" id="fsBtn">Tela cheia</button>
+  </div>
+  <iframe id="frame" title="Jogo"></iframe>
+</section>
+
+<script>
+/*FONTCSS*/
+/*GAMES*/
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var st = document.createElement('style'); st.textContent = FONTCSS; document.head.appendChild(st);
+  /* Firefox e Safari recusam mudar o endereço de um arquivo local: o menu segue funcionando sem isso. */
+  function setURL(h){ try { var cur = location.hash; if ((h || '') === (cur || '')) return; history.pushState(null, '', h || location.pathname); } catch (e) {} }
+  var NAMES = { queda:'A Queda das Chaves', heroi:'O Herói da Cripta', arena:'Arena das Árvores' };
+  var current = null;
+  function open(id, push){
+    if (!GAMES[id]) return showMenu(push);
+    current = id;
+    $('gameTitle').textContent = NAMES[id];
+    [].forEach.call(document.querySelectorAll('[data-switch]'), function(b){ b.setAttribute('aria-current', b.dataset.switch === id); });
+    var html = GAMES[id].replace('<style>', '<style>\n' + FONTCSS);
+    $('frame').srcdoc = html;
+    $('menu').hidden = true; $('player').hidden = false;
+    document.title = NAMES[id] + ' · Masmorra das Árvores';
+    if (push !== false) setURL('#' + id);
+    $('frame').onload = function(){ try { $('frame').contentWindow.focus(); } catch (e) {} };
+  }
+  function showMenu(push){
+    current = null; $('frame').srcdoc = ''; $('player').hidden = true; $('menu').hidden = false;
+    document.title = 'Masmorra das Árvores · Jogos da Era 03';
+    if (push !== false) setURL('');
+    var b = document.querySelector('.play'); if (b) b.focus({ preventScroll:true });
+  }
+  document.addEventListener('click', function(e){
+    var p = e.target.closest('[data-game]'); if (p) { open(p.dataset.game); return; }
+    var s = e.target.closest('[data-switch]'); if (s) { open(s.dataset.switch); }
+  });
+  $('back').addEventListener('click', function(){ showMenu(); });
+  $('fsBtn').addEventListener('click', function(){
+    var el = $('player');
+    try { if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(function(){}); } catch (e) {}
+  });
+  document.addEventListener('fullscreenchange', function(){ $('fsBtn').textContent = document.fullscreenElement ? 'Sair da tela cheia' : 'Tela cheia'; });
+  function route(){ var h = ''; try { h = (location.hash || '').replace('#', ''); } catch (e) {} if (GAMES[h]) open(h, false); else showMenu(false); }
+  window.addEventListener('popstate', route);
+  route();
+})();
+</script>
+</body>
+</html>

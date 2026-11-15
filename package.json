@@ -1,0 +1,14 @@
+{
+  "name": "masmorra-das-arvores",
+  "version": "1.0.0",
+  "description": "Jogos para ensinar árvores de busca: BST, AVL, rubro-negra e splay",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "test": "node tests/test.js && node tests/test_hints.js"
+  },
+  "devDependencies": {
+    "@fontsource/alegreya-sans": "^5.0.0",
+    "@fontsource/im-fell-english-sc": "^5.0.0"
+  }
+}
