@@ -4,12 +4,13 @@ const fs = require('fs'), path = require('path');
 const src = f => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 const engine = src('engine.js').replace("if (typeof module !== 'undefined') module.exports = Engine;\n", '');
 const hints = src('hints.js');
+const ranking = src('ranking.js');
 const font = f => fs.readFileSync(require.resolve('@fontsource/' + f)).toString('base64');
 let css = `@font-face{font-family:'IM Fell English SC';font-weight:400;font-display:swap;src:url(data:font/woff2;base64,${font('im-fell-english-sc/files/im-fell-english-sc-latin-400-normal.woff2')}) format('woff2')}\n`;
 for (const w of [400, 500, 700, 800]) css += `@font-face{font-family:'Alegreya Sans';font-weight:${w};font-display:swap;src:url(data:font/woff2;base64,${font(`alegreya-sans/files/alegreya-sans-latin-${w}-normal.woff2`)}) format('woff2')}\n`;
 
 function game(tpl, withHints) {
-  let h = src(tpl).replace('/*ENGINE*/', () => engine + (withHints ? '\n' + hints : ''));
+  let h = src(tpl).replace('/*ENGINE*/', () => engine + (withHints ? '\n' + hints + '\n' + ranking : ''));
   return h.replace(/<!--FONTS-->[\s\S]*?<!--\/FONTS-->/, '');
 }
 function offline(h) {
@@ -30,5 +31,5 @@ const LS = String.fromCharCode(0x2028), PS = String.fromCharCode(0x2029);
 const safe = x => JSON.stringify(x).split('</').join('<\\/').split('<!--').join('<\\!--').split(LS).join('\\u2028').split(PS).join('\\u2029');
 let menu = src('menu.template.html');
 menu = menu.replace('/*FONTCSS*/', () => 'var FONTCSS = ' + safe(css) + ';')
-  .replace('/*GAMES*/', () => 'var GAMES = {' + Object.keys(games).map(k => JSON.stringify(k) + ':' + safe(games[k])).join(',\n') + '};');
+  .replace('/*RANKING*/', () => ranking).replace('/*GAMES*/', () => 'var GAMES = {' + Object.keys(games).map(k => JSON.stringify(k) + ':' + safe(games[k])).join(',\n') + '};');
 out('index.html', menu);

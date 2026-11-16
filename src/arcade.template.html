@@ -135,10 +135,12 @@ label.check input{accent-color:var(--torch);width:18px;height:18px}
           <li><kbd>←</kbd> <kbd>→</kbd> (ou <kbd>A</kbd> <kbd>D</kbd>, ou os botões): em cada sala, mande a chave para a <b>esquerda se for menor</b> ou para a <b>direita se for maior</b>, antes que o anel se apague.</li>
           <li>A partir da <b>onda 3</b> a árvore vira AVL. Quando ela tremer, aperte duas setas: a 1ª é o <b>lado que pesa</b>, a 2ª é o <b>lado do filho</b> onde a chave entrou. <kbd>←</kbd><kbd>←</kbd> LL · <kbd>←</kbd><kbd>→</kbd> LR · <kbd>→</kbd><kbd>→</kbd> RR · <kbd>→</kbd><kbd>←</kbd> RL.</li>
           <li>Travou? <kbd>H</kbd> ou o botão <b>Dica</b>: a 1ª camada mostra o que olhar, a 2ª mostra o raciocínio. Cada camada custa pontos e dá mais tempo.</li>
+          <li>Os pontos entram no <b>ranking geral</b>, somados aos do Herói da Cripta. Quem fica entre os 10 primeiros deixa um nome de 5 letras.</li>
           <li>Acertos seguidos multiplicam os pontos. Cada erro custa uma vida. Uma onda sem erros devolve uma vida.</li>
         </ul>
         <div class="row">
           <button class="btn primary" id="startBtn">Começar <kbd>Enter</kbd></button>
+          <button class="btn" id="rankBtn1">Ranking</button>
           <label class="check"><input type="checkbox" id="practice"> Treino: sem relógio</label>
           <label class="check"><input type="checkbox" id="explainOpt" checked> Explicar cada erro numa janela</label>
           <label class="check"><input type="checkbox" id="introOpt" checked> Mostrar as instruções antes de jogar</label>
@@ -160,7 +162,7 @@ label.check input{accent-color:var(--torch);width:18px;height:18px}
         <div class="newrec" id="newRec"></div>
         <div class="grid" id="finalStats"></div>
         <div class="review" id="review"><h3>Onde você tropeçou</h3><ul id="reviewList"></ul></div>
-        <div class="row"><button class="btn primary" id="againBtn">Jogar de novo <kbd>Enter</kbd></button><button class="btn" id="homeBtn">Início</button></div>
+        <div class="row"><button class="btn primary" id="againBtn">Jogar de novo <kbd>Enter</kbd></button><button class="btn" id="rankBtn2">Ranking</button><button class="btn" id="homeBtn">Início</button></div>
       </div>
     </div>
   </div>
@@ -457,6 +459,7 @@ function gameOver(){
   $('review').hidden = !ms.length;
   $('reviewList').innerHTML = ms.map(function(m){ return '<li>' + m.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>'; }).join('');
   $('overOv').hidden = false; $('againBtn').focus();
+  if (!G.practice && G.score > 0) { Ranking.recordQueda(G.score); setTimeout(function(){ Ranking.after(function(){ $('againBtn').focus(); }); }, 700); }
   hud();
 }
 
@@ -603,6 +606,8 @@ function toHome(){ G = null; ['overOv', 'pauseOv'].forEach(function(id){ $(id).h
 $('startBtn').addEventListener('click', start);
 $('againBtn').addEventListener('click', start);
 $('homeBtn').addEventListener('click', toHome);
+$('rankBtn1').addEventListener('click', function(){ Ranking.show(); });
+$('rankBtn2').addEventListener('click', function(){ Ranking.show(); });
 $('resumeBtn').addEventListener('click', togglePause);
 $('quitBtn').addEventListener('click', function(){ $('pauseOv').hidden = true; G.lives = 0; gameOver(); });
 $('pauseBtn').addEventListener('click', togglePause);

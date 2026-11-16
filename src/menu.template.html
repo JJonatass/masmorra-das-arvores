@@ -69,6 +69,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     <div>
       <p class="era">Trilha de Estruturas · Era 03 · Árvores de busca</p>
       <h1>Masmorra das Árvores</h1>
+      <p style="margin:0 0 12px"><button id="rankBtn" style="background:#F2A93B;color:#1d1408;border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:17px;cursor:pointer">Ranking geral</button></p>
       <p>Três jogos para praticar BST, AVL, rubro-negra, splay e percursos. Todos têm dica em camadas pela tecla <kbd>H</kbd>: a primeira diz o que olhar, a segunda mostra o raciocínio.</p>
     </div>
   </header>
@@ -158,6 +159,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
 <script>
 /*FONTCSS*/
 /*GAMES*/
+/*RANKING*/
 (function(){
   'use strict';
   var $ = function(id){ return document.getElementById(id); };
@@ -189,6 +191,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     var s = e.target.closest('[data-switch]'); if (s) { open(s.dataset.switch); }
   });
   $('back').addEventListener('click', function(){ showMenu(); });
+  $('rankBtn').addEventListener('click', function(){ Ranking.show(); });
   $('fsBtn').addEventListener('click', function(){
     var el = $('player');
     try { if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(function(){}); } catch (e) {}

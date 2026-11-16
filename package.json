@@ -5,10 +5,13 @@
   "private": true,
   "scripts": {
     "build": "node build.js",
-    "test": "node tests/test.js && node tests/test_hints.js"
+    "test": "node tests/test.js && node tests/test_hints.js && node tests/test_ranking_api.js"
   },
   "devDependencies": {
     "@fontsource/alegreya-sans": "^5.0.0",
     "@fontsource/im-fell-english-sc": "^5.0.0"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.9.0"
   }
 }

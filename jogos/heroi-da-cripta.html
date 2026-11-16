@@ -55,6 +55,10 @@ canvas#cv{display:block;width:100%;height:100%}
 .hintbox{background:var(--stone);border:1px dashed var(--torch);border-radius:12px;padding:8px 14px;font-size:15.5px}
 .hintbox b{color:var(--torch);font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:block}
 .act.hint .l{color:var(--torch)}
+.ptbox{display:flex;flex-direction:column;align-items:flex-end;min-width:84px}
+.ptbox span{font-size:13px;color:var(--muted)}
+.ptbox b{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;color:#F2C14E}
+.ptbox small{font-size:12px;color:var(--torch);font-weight:700}
 .side{display:flex;flex-direction:column;gap:12px}
 .card{background:var(--stone);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .card h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 8px}
@@ -133,6 +137,7 @@ label.check input{accent-color:var(--torch);width:18px;height:18px}
       <div class="meter"><div class="head"><span>Vida</span><b id="hpText">100 / 100</b></div><div class="bar"><span id="hpFill" style="width:100%"></span></div></div>
       <div class="meter"><div class="head"><span>Mana</span><b id="mpText">10 / 12</b></div><div class="bar"><span id="mpFill" style="width:80%"></span></div></div>
     </div>
+    <div class="ptbox" aria-live="polite"><span>Pontos</span><b id="ptText">0</b><small id="ptMult"></small></div>
     <button class="hbtn" id="muteBtn">Som ligado</button>
     <button class="hbtn" id="helpBtn">Instruções</button>
     <button class="hbtn" id="mapBtn">Capítulos</button>
@@ -173,7 +178,7 @@ label.check input{accent-color:var(--torch);width:18px;height:18px}
       <p><b>Meditar</b> (<kbd>E</kbd>) recupera mana, <b>Poção</b> (<kbd>Q</kbd>) recupera vida. Ambos gastam um turno, e o chefe ataca a cada poucos turnos.</p>
     </div>
     <ol class="chapters" id="chapters"></ol>
-    <p class="sub" style="margin:0">Todos os capítulos estão liberados: comece por qualquer um.</p>
+    <div class="row" style="justify-content:space-between"><p class="sub" style="margin:0">Todos os capítulos estão liberados: comece por qualquer um.</p><button class="btn" id="rankMap">Ranking geral</button></div>
   </div>
 </div>
 
@@ -802,6 +807,137 @@ var Hints = (function(E){
     insert:insert, search:search, trav:trav, svgTree:svgTree, modal:modal, close:close, isOpen:isOpen, RBN:RBN, intro:intro };
 })(Engine);
 
+/* Ranking compartilhado: soma o recorde da Queda das Chaves com os recordes do Herói da Cripta. */
+var Ranking = (function(){
+  'use strict';
+  var API = 'https://masmorra-das-arvores.vercel.app/api/ranking';
+  try { if (/^https?:$/.test(location.protocol) && /masmorra-das-arvores.*\.vercel\.app$/.test(location.hostname)) API = '/api/ranking'; } catch (e) {}
+  var KEY = 'masmorra-jogador';
+  var GOLD = ['#F2C14E', '#C9CCD6', '#CD8B5A'];
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function fmt(n){ return (+n || 0).toLocaleString('pt-BR'); }
+  function newId(){ var s = ''; for (var i = 0; i < 20; i++) s += 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]; return s; }
+  function cleanTag(t){ return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); }
+
+  /* ---------- jogador local ---------- */
+  var mem = null;
+  function player(){
+    try { var raw = localStorage.getItem(KEY); if (raw) { var d = JSON.parse(raw); if (!mem) mem = d; else { for (var k in mem) delete mem[k]; for (var j in d) mem[j] = d[j]; } } } catch (e) {}
+    if (!mem || !mem.id) mem = { id: newId(), tag: '', queda: 0, heroi: {}, pending: false };
+    if (!mem.heroi) mem.heroi = {};
+    save(); return mem;
+  }
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) {} }
+  function heroiTotal(p){ p = p || player(); var t = 0; for (var k in p.heroi) t += +p.heroi[k] || 0; return t; }
+  function totals(){ var p = player(); return { queda: p.queda || 0, heroi: heroiTotal(p), total: (p.queda || 0) + heroiTotal(p) }; }
+  function recordQueda(score){ var p = player(), novo = score > (p.queda || 0); if (novo) { p.queda = Math.floor(score); p.pending = true; save(); } return novo; }
+  function recordHeroi(chapter, score){ var p = player(), novo = score > (p.heroi[chapter] || 0); if (novo) { p.heroi[chapter] = Math.floor(score); p.pending = true; save(); } return { novo: novo, best: p.heroi[chapter] || 0 }; }
+
+  /* ---------- servidor ---------- */
+  function get(){ return fetch(API + '?id=' + encodeURIComponent(player().id), { cache: 'no-store' }).then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); }); }
+  function post(){
+    var p = player(), t = totals();
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, tag: p.tag, queda: t.queda, heroi: t.heroi }) })
+      .then(function(r){ return r.json().then(function(d){ if (!r.ok || !d.ok) throw new Error(d.error || ('http ' + r.status)); p.pending = false; save(); return d; }); });
+  }
+  function init(){ var p = player(); if (p.pending && p.tag) post().catch(function(){}); }
+
+  /* ---------- janela ---------- */
+  var box = null, onClose = null;
+  function close(){ if (!box) return; box.remove(); box = null; var cb = onClose; onClose = null; if (cb) cb(); }
+  window.addEventListener('keydown', function(e){
+    if (!box) return;
+    e.stopImmediatePropagation();
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+  }, true);
+  function open(inner, cb){
+    if (box) { box.remove(); box = null; }
+    onClose = cb || null;
+    box = document.createElement('div');
+    box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'rk-title');
+    box.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(8,7,12,.85);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow:auto';
+    box.innerHTML = '<div style="margin:auto;max-width:720px;width:100%;background:#23222F;border:2px solid #F2C14E;border-radius:16px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#ECE3CF;font-family:\'Alegreya Sans\',\'Trebuchet MS\',sans-serif" id="rk-panel">' + inner + '</div>';
+    document.body.appendChild(box);
+    box.addEventListener('click', function(e){ var b = e.target.closest('[data-rk]'); if (b && b.dataset.rk === 'close') close(); if (b && b.dataset.rk === 'show') { var cb = onClose; onClose = null; show(null, cb); } });
+    var f = box.querySelector('input,[data-rk]'); if (f) setTimeout(function(){ try { f.focus({ preventScroll:true }); } catch (e) {} }, 30);
+  }
+  var BTN = 'border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:16px;cursor:pointer;font-family:inherit';
+  function head(kicker, title){ return '<p style="margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:#F2C14E">' + esc(kicker) + '</p><h2 id="rk-title" style="font-family:\'IM Fell English SC\',Georgia,serif;font-weight:400;font-size:32px;line-height:1.1;margin:4px 0 12px">' + esc(title) + '</h2>'; }
+  function btns(list){ return '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px">' + list.join('') + '</div>'; }
+  function primary(label, attr){ return '<button type="button" ' + attr + ' style="' + BTN + ';background:#F2A93B;color:#1d1408">' + esc(label) + '</button>'; }
+  function second(label, attr){ return '<button type="button" ' + attr + ' style="' + BTN + ';background:#2E2C3D;color:#ECE3CF;border:1px solid #45425A">' + esc(label) + '</button>'; }
+  function mine(){ var t = totals(); return '<p style="margin:12px 0 0;color:#A9A1B8;font-size:15px">Seus recordes neste aparelho: Queda <b style="color:#ECE3CF">' + fmt(t.queda) + '</b> + Herói <b style="color:#ECE3CF">' + fmt(t.heroi) + '</b> = <b style="color:#F2A93B">' + fmt(t.total) + '</b>' + (player().tag ? ' · nome <b style="color:#ECE3CF">' + esc(player().tag) + '</b>' : '') + '</p>'; }
+
+  function table(d){
+    if (!d.top.length) return '<p style="color:#A9A1B8">Ninguém no ranking ainda. Seja o primeiro!</p>';
+    var rows = d.top.map(function(r, i){
+      var medal = i < 3, c = medal ? GOLD[i] : '#45425A', bg = medal ? 'rgba(242,193,78,' + (0.16 - i * 0.04) + ')' : '#2E2C3D';
+      return '<tr style="background:' + bg + ';outline:' + (r.me ? '2px solid #F2A93B' : 'none') + ';outline-offset:-2px">' +
+        '<td style="padding:' + (medal ? '12px' : '8px') + ' 10px;width:56px"><span style="display:inline-grid;place-items:center;width:' + (medal ? 38 : 30) + 'px;height:' + (medal ? 38 : 30) + 'px;border-radius:50%;background:' + (medal ? c : 'transparent') + ';color:' + (medal ? '#1d1408' : '#A9A1B8') + ';border:' + (medal ? 'none' : '1px solid #45425A') + ';font-weight:800;font-size:' + (medal ? 18 : 15) + 'px">' + r.pos + 'º</span></td>' +
+        '<td style="padding:8px 10px;font-weight:800;font-size:' + (medal ? 24 : 18) + 'px;letter-spacing:.08em;font-family:\'IM Fell English SC\',Georgia,serif;color:' + (medal ? c : '#ECE3CF') + '">' + esc(r.tag) + (r.me ? ' <span style="font-family:inherit;font-size:12px;letter-spacing:0;color:#F2A93B;font-weight:700;vertical-align:middle">você</span>' : '') + '</td>' +
+        '<td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;color:#D9D0BE">' + fmt(r.queda) + '</td>' +
+        '<td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;color:#D9D0BE">' + fmt(r.heroi) + '</td>' +
+        '<td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;font-weight:800;font-size:' + (medal ? 20 : 17) + 'px;color:' + (medal ? c : '#ECE3CF') + '">' + fmt(r.total) + '</td></tr>';
+    }).join('');
+    return '<div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:0 6px;font-size:16px"><thead><tr style="color:#A9A1B8;font-size:12px;letter-spacing:.08em;text-transform:uppercase"><th style="text-align:left;padding:0 10px">Pos.</th><th style="text-align:left;padding:0 10px">Nome</th><th style="text-align:right;padding:0 10px">Queda</th><th style="text-align:right;padding:0 10px">Herói</th><th style="text-align:right;padding:0 10px">Total</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+  function show(note, cb){
+    open(head('Ranking geral', 'Os 10 maiores da masmorra') + '<p style="color:#A9A1B8">Carregando…</p>', cb);
+    get().then(function(d){
+      if (!box) return;
+      var meLine = d.me && d.me.pos > 10 ? '<p style="margin:10px 0 0;font-size:15px">Você está em <b style="color:#F2A93B">' + d.me.pos + 'º</b> de ' + d.players + ' jogadores, com ' + fmt(d.me.total) + ' pontos.</p>' : '';
+      box.querySelector('#rk-panel').innerHTML = head('Ranking geral · ' + d.players + (d.players === 1 ? ' jogador' : ' jogadores'), 'Os 10 maiores da masmorra') +
+        (note ? '<p style="margin:0 0 10px;font-size:17px;color:#B7F0CC">' + esc(note) + '</p>' : '') +
+        '<p style="margin:0 0 6px;color:#A9A1B8;font-size:15px">Total = recorde na Queda das Chaves + soma dos recordes de cada capítulo do Herói da Cripta.</p>' +
+        table(d) + meLine + mine() + btns([primary('Fechar', 'data-rk="close"')]);
+      var c = box.querySelector('[data-rk="close"]'); if (c) c.focus({ preventScroll:true });
+    }).catch(function(){
+      if (!box) return;
+      box.querySelector('#rk-panel').innerHTML = head('Ranking geral', 'Sem conexão com o ranking') +
+        '<p>O ranking fica na internet. Sem conexão, os seus pontos continuam guardados neste aparelho e são enviados na próxima vez que houver internet.</p>' + mine() + btns([primary('Fechar', 'data-rk="close"')]);
+    });
+  }
+  function askName(onDone){
+    var p = player(), t = totals();
+    open(head('Você entrou no top 10!', 'Deixe seu nome na masmorra') +
+      '<p style="margin:0 0 12px;font-size:17px">Queda <b>' + fmt(t.queda) + '</b> + Herói <b>' + fmt(t.heroi) + '</b> = <b style="color:#F2A93B">' + fmt(t.total) + '</b> pontos. Escolha um nome de até <b>5 caracteres</b> (letras e números).</p>' +
+      '<form id="rk-form" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><input id="rk-tag" maxlength="5" autocomplete="off" spellcheck="false" aria-label="Nome com até 5 caracteres" value="' + esc(p.tag) + '" style="width:9.5ch;font-size:34px;font-weight:800;letter-spacing:.25em;text-transform:uppercase;text-align:center;background:#121119;color:#F2C14E;border:2px solid #F2C14E;border-radius:10px;padding:6px 8px;font-family:\'IM Fell English SC\',Georgia,serif">' +
+      '<span id="rk-count" style="color:#A9A1B8;font-size:14px"></span><p id="rk-err" style="flex-basis:100%;margin:0;color:#FFB3A6;font-size:14px;min-height:1.2em"></p>' +
+      btns([second('Agora não', 'data-rk="close"'), '<button type="submit" style="' + BTN + ';background:#F2A93B;color:#1d1408">Salvar no ranking</button>']) + '</form>', onDone);
+    var inp = box.querySelector('#rk-tag'), cnt = box.querySelector('#rk-count'), err = box.querySelector('#rk-err');
+    function upd(){ var v = cleanTag(inp.value); if (v !== inp.value) inp.value = v; cnt.textContent = v.length + '/5'; err.textContent = ''; }
+    inp.addEventListener('input', upd); upd(); setTimeout(function(){ try { inp.focus(); inp.select(); } catch (e) {} }, 40);
+    box.querySelector('#rk-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      var v = cleanTag(inp.value); if (!v) { err.textContent = 'Digite pelo menos 1 letra ou número.'; inp.focus(); return; }
+      p.tag = v; p.pending = true; save();
+      var sb = box.querySelector('button[type=submit]'); sb.disabled = true; sb.textContent = 'Salvando…';
+      post().then(function(d){ var pos = d.me ? d.me.pos : null; onClose = null; show(pos ? 'Salvo! Você está em ' + pos + 'º lugar.' : 'Salvo!', onDone); })
+        .catch(function(){ sb.disabled = false; sb.textContent = 'Salvar no ranking'; err.textContent = 'Não consegui falar com o ranking. Seus pontos ficaram guardados e serão enviados quando houver internet.'; });
+    });
+  }
+  /* depois de cada partida: entra no top 10? então pede o nome (ou atualiza, se já tem nome) */
+  function after(onDone){
+    var t = totals(); if (!t.total) { if (onDone) onDone(); return; }
+    get().then(function(d){
+      var tenth = d.top.length < 10 ? -1 : d.top[9].total;
+      var qualifies = t.total > tenth || (d.me && d.me.pos <= 10);
+      var p = player();
+      if (!qualifies) {
+        if (p.tag && p.pending) post().catch(function(){});
+        open(head('Ranking geral', 'Quase no top 10') + '<p style="font-size:17px">Sua soma: Queda <b>' + fmt(t.queda) + '</b> + Herói <b>' + fmt(t.heroi) + '</b> = <b style="color:#F2A93B">' + fmt(t.total) + '</b>. O 10º lugar tem <b>' + fmt(tenth) + '</b>: faltam <b style="color:#F2C14E">' + fmt(tenth - t.total + 1) + '</b> pontos.</p><p style="color:#A9A1B8">Melhore o recorde em qualquer um dos dois jogos: a soma conta.</p>' + btns([second('Ver ranking', 'data-rk="show"'), primary('Continuar', 'data-rk="close"')]), onDone);
+        return;
+      }
+      if (p.tag) { post().then(function(d2){ show('Ranking atualizado: você está em ' + (d2.me ? d2.me.pos + 'º' : '') + ' lugar, como ' + p.tag + '.', onDone); }).catch(function(){ if (onDone) onDone(); }); return; }
+      askName(onDone);
+    }).catch(function(){ if (onDone) onDone(); });
+  }
+
+  init();
+  return { player: player, totals: totals, recordQueda: recordQueda, recordHeroi: recordHeroi, after: after, show: show, askName: askName, isOpen: function(){ return !!box; }, _api: function(){ return API; } };
+})();
+
 </script>
 <script>
 (function(){
@@ -898,7 +1034,7 @@ function beginChapter(i){
   audioInit(); if (AC && AC.state === 'suspended') AC.resume();
   var c = CHAPTERS[i];
   S = { ci: i, ch: c, hero:{ hp:100, max:100, mana:10, maxMana:12, potions:2 }, boss:{ name:c.boss.name, kind:c.boss.kind, hp:c.boss.hp, max:c.boss.hp, every:c.boss.every, dmg:c.boss.dmg, counter:c.boss.every, hurtT:0 },
-    trees:{}, mode:null, enc:null, encN:0, recent:[], mistakes:0, turns:0, disp:{}, hero2:{ x: 0, y: 0 }, heroHit:0, heroCast:0,
+    score:0, streak:0, trees:{}, mode:null, enc:null, encN:0, recent:[], mistakes:0, turns:0, disp:{}, hero2:{ x: 0, y: 0 }, heroHit:0, heroCast:0,
     hint:{ ctx:null, level:0 }, hints:0, parts:[], floats:[], rings:[], shake:0, flash:0, busy:0, state:'play', time:0, pendingNext:-1, banner:null };
   c.modes.forEach(function(m){ S.trees[m] = buildTree(m); });
   $('mapOv').hidden = true; $('endOv').hidden = true; $('log').innerHTML = ''; $('hintbox').hidden = true;
@@ -929,7 +1065,7 @@ function nextEncounter(first){
     S.enc = { mode:'splay', phase:'seek', key:target, at:t2.root.key };
     if (t2.root.key === target) {
       callout('O chefe pede a chave <b>' + target + '</b>... e ela já está na raiz!');
-      damageBoss(8, 'Achou na hora'); toast('Sala pedida de novo já está na raiz: busca instantânea. É a vantagem da splay.', false);
+      damageBoss(8, 'Achou na hora'); addPts(30); toast('Sala pedida de novo já está na raiz: busca instantânea. É a vantagem da splay.', false);
       log('Splay: ' + target + ' já estava na raiz.', 'good'); S.enc.phase = 'done'; S.pendingNext = 1.6;
     } else callout('O chefe exige a chave <b>' + target + '</b>. Encontre a sala: <kbd>←</kbd> <kbd>→</kbd>');
   }
@@ -947,6 +1083,13 @@ function chooseSplayTarget(t){
   if (recent.length && Math.random() < 0.3) return pick(recent);
   var c = E.nodes(t).filter(function(n){ var d = E.depth(n); return d >= 2 && d <= 5; });
   return pick(c.length ? c : E.nodes(t)).key;
+}
+
+/* ---------- pontuação ---------- */
+function mult(){ return 1 + Math.min(2, Math.floor(S.streak / 5)); }
+function addPts(base, raw){
+  var pts = raw ? base : base * mult(); S.score += pts;
+  var hp = heroPos(); float(hp.x + 18, hp.y - 62, '+' + pts, '#F2C14E', 16); hud();
 }
 
 /* ---------- turnos ---------- */
@@ -971,7 +1114,7 @@ function damageBoss(d, label){
   if (S.boss.hp <= 0) { say(LINES[S.boss.kind].die); S.state = 'ending'; setTimeout(win, 1200); }
 }
 function mistake(msg, dmg, at, exp){
-  S.mistakes++;
+  S.mistakes++; S.streak = 0;
   toast(msg, true); log('Erro: ' + msg, 'bad'); say(pick(LINES[S.boss.kind].gloat));
   bossAttack(dmg, pick(LINES[S.boss.kind].gloat));
   if (at) sparks(at.x, at.y, COL.ember, 14);
@@ -992,7 +1135,7 @@ function move(dir){
     if (S.state === 'play') spendTurn();
     S.busy = 0.4; return;
   }
-  SFX.step(); S.hero.mana = Math.min(S.hero.maxMana, S.hero.mana + 1);
+  SFX.step(); S.hero.mana = Math.min(S.hero.maxMana, S.hero.mana + 1); S.streak++; addPts(10);
   var child = need === 'L' ? n.left : n.right;
   if (e.phase === 'carry') {
     if (child) { e.at = child.key; }
@@ -1001,12 +1144,12 @@ function move(dir){
       var sp = { x: dpos(n.key).x + (need === 'L' ? -40 : 40), y: dpos(n.key).y + 60 }; S.disp[e.key] = sp;
       e.at = e.key; e.x = e.key; e.phase = 'fix';
       sparks(sp.x, sp.y, COL.moss, 16); log('Chave ' + e.key + ' colocada à ' + (need === 'L' ? 'esquerda' : 'direita') + ' de ' + n.key + '.', 'good');
-      damageBoss(4);
+      damageBoss(4); addPts(25);
       setFixCallout();
     }
   } else {
     e.at = child.key;
-    if (child.key === e.key) { e.phase = 'splay'; e.steps = []; callout('Baú encontrado! Suba <b>' + e.key + '</b> até a raiz: feitiços <kbd>1</kbd>–<kbd>3</kbd>'); log('Encontrou ' + e.key + ' na profundidade ' + E.depth(child) + '.', 'good'); damageBoss(4); }
+    if (child.key === e.key) { e.phase = 'splay'; e.steps = []; callout('Baú encontrado! Suba <b>' + e.key + '</b> até a raiz: feitiços <kbd>1</kbd>–<kbd>3</kbd>'); log('Encontrou ' + e.key + ' na profundidade ' + E.depth(child) + '.', 'good'); damageBoss(4); addPts(25); }
   }
   spendTurn(); S.busy = 0.28; renderActions(); hud();
 }
@@ -1029,16 +1172,16 @@ function cast(id){
     if (id !== d) { SFX.fizzle(); mistake(rbHint(t, x, r, id, d), 14, p0, Hints.explainRB(t, x, id)); if (S.state === 'play') spendTurn(); S.busy = 0.4; renderActions(); hud(); return; }
     SFX.spell(); ring(p0.x, p0.y, d === 'recolor' ? COL.red : d === 'ok' ? COL.torch : COL.curse);
     var nx = E.rbApply(t, x, d);
-    log('Feitiço ' + sp.name + ' em ' + x.key + '.', 'good'); damageBoss(sp.dmg); swirl(p0.x, p0.y);
+    log('Feitiço ' + sp.name + ' em ' + x.key + '.', 'good'); damageBoss(sp.dmg); swirl(p0.x, p0.y); S.streak++; addPts(sp.dmg * 3);
     if (nx) { e.x = nx.key; e.at = nx.key; setFixCallout(); toast('O conflito subiu para ' + nx.key + '.', false); }
     else { finishEncounter('A cripta voltou a obedecer às regras.'); }
   } else {
     var d2 = E.splayDiagnose(x);
     if (id !== d2) { SFX.fizzle(); mistake(splayHint(x, id, d2), 14, p0, Hints.explainSplay(t, x, id)); if (S.state === 'play') spendTurn(); S.busy = 0.4; renderActions(); hud(); return; }
-    SFX.spell(); E.splayApply(t, x, d2); e.steps.push(sp.name); swirl(p0.x, p0.y);
+    SFX.spell(); E.splayApply(t, x, d2); e.steps.push(sp.name); swirl(p0.x, p0.y); S.streak++; addPts(sp.dmg * 3);
     log('Feitiço ' + sp.name + ': ' + x.key + ' subiu.', 'good');
     if (!x.parent) {
-      damageBoss(sp.dmg + 10);
+      damageBoss(sp.dmg + 10); addPts(30);
       S.recent.unshift(e.key); S.recent = S.recent.slice(0, 3);
       finishEncounter(e.key + ' chegou à raiz (' + e.steps.join(' → ') + ').');
     } else damageBoss(sp.dmg);
@@ -1047,7 +1190,7 @@ function cast(id){
   S.busy = 0.45; renderActions(); hud();
 }
 function finishEncounter(msg){
-  var e = S.enc; e.phase = 'done';
+  var e = S.enc; e.phase = 'done'; addPts(20);
   toast(msg, false); callout(msg);
   var hp = heroPos(), roll = Math.random();
   if (roll < 0.3 && S.hero.potions < 3) { S.hero.potions++; float(hp.x, hp.y - 50, '+1 poção', COL.moss, 18); log('Encontrou uma poção.', 'good'); }
@@ -1102,7 +1245,7 @@ function askHint(){
   if (S.hint.ctx !== c) S.hint = { ctx:c, level:0 };
   if (S.hint.level >= 2) { toast('As duas camadas desta jogada já foram abertas.', false); return; }
   if (S.hero.mana < 1) { toast('Sem mana para a dica. Medite (E).', true); return; }
-  S.hero.mana -= 1; S.hint.level++; S.hints++;
+  S.hero.mana -= 1; S.hint.level++; S.hints++; S.score = Math.max(0, S.score - 15);
   var e = S.enc, t = tree(), pair;
   if (e.phase === 'carry' || e.phase === 'seek') pair = Hints.step(t, e.key, e.at);
   else if (e.phase === 'fix') pair = Hints.rb(t, E.find(t, e.x));
@@ -1153,6 +1296,7 @@ function hud(){
   $('hpText').textContent = h.hp + ' / ' + h.max; $('hpFill').style.width = (100 * h.hp / h.max) + '%';
   $('mpText').textContent = h.mana + ' / ' + h.maxMana; $('mpFill').style.width = (100 * h.mana / h.maxMana) + '%';
   $('bhpText').textContent = b.hp + ' / ' + b.max; $('bhpFill').style.width = (100 * b.hp / b.max) + '%';
+  $('ptText').textContent = S.score.toLocaleString('pt-BR'); $('ptMult').textContent = mult() > 1 ? 'combo ×' + mult() : (S.streak ? S.streak + ' seguidos' : '');
   $('bossNext').innerHTML = 'Ataca em <b>' + b.counter + '</b> ' + (b.counter === 1 ? 'turno' : 'turnos') + ' · erro = contra-ataque';
 }
 
@@ -1160,27 +1304,33 @@ function hud(){
 function win(){
   S.state = 'won'; SFX.win();
   var st = S.mistakes === 0 ? 3 : S.mistakes <= 2 ? 2 : 1;
+  var bonus = ({ rb:300, splay:400, final:600 })[S.ch.id] + S.hero.hp * 5; S.score += bonus; hud();
+  var rec = Ranking.recordHeroi(S.ch.id, S.score);
   save.stars[S.ch.id] = Math.max(save.stars[S.ch.id] || 0, st); persist();
   $('endPanel').className = 'panel';
   $('endTitle').textContent = S.boss.name + ' caiu!';
   $('endStars').innerHTML = starStr(st);
-  $('endText').textContent = 'Vida restante: ' + S.hero.hp + ' · ' + (S.mistakes === 0 ? 'nenhum erro' : S.mistakes === 1 ? 'um erro' : S.mistakes + ' erros') + ' · ' + S.turns + ' turnos · ' + (S.hints === 1 ? '1 dica' : S.hints + ' dicas') + '.';
+  $('endText').textContent = 'Vida restante: ' + S.hero.hp + ' · ' + (S.mistakes === 0 ? 'nenhum erro' : S.mistakes === 1 ? 'um erro' : S.mistakes + ' erros') + ' · ' + S.turns + ' turnos · ' + (S.hints === 1 ? '1 dica' : S.hints + ' dicas') + '. Pontos: ' + S.score.toLocaleString('pt-BR') + ' (bônus de vitória +' + bonus + ')' + (rec.novo ? ' · novo recorde do capítulo!' : ' · recorde do capítulo: ' + rec.best.toLocaleString('pt-BR') + '.');
   var nx = S.ci + 1 < CHAPTERS.length ? S.ci + 1 : -1;
-  $('endActions').innerHTML = (nx >= 0 ? '<button class="btn primary" data-e="next">Próximo capítulo</button>' : '') + '<button class="btn" data-e="again">Jogar de novo</button><button class="btn" data-e="map">Capítulos</button>';
+  $('endActions').innerHTML = (nx >= 0 ? '<button class="btn primary" data-e="next">Próximo capítulo</button>' : '') + '<button class="btn" data-e="again">Jogar de novo</button><button class="btn" data-e="rank">Ranking</button><button class="btn" data-e="map">Capítulos</button>';
   $('endOv').hidden = false; $('endActions').querySelector('button').focus();
+  setTimeout(function(){ Ranking.after(function(){ var b = $('endActions').querySelector('button'); if (b) b.focus(); }); }, 900);
 }
 function lose(){
   S.state = 'lost'; SFX.lose();
   $('endPanel').className = 'panel lost';
   $('endTitle').textContent = 'O herói caiu';
   $('endStars').innerHTML = '';
-  $('endText').textContent = S.boss.name + ' ficou com ' + S.boss.hp + ' de vida. Releia o Grimório: cada erro custa um contra-ataque.';
-  $('endActions').innerHTML = '<button class="btn primary" data-e="again">Tentar de novo</button><button class="btn" data-e="map">Capítulos</button>';
+  var rec = Ranking.recordHeroi(S.ch.id, S.score);
+  $('endText').textContent = S.boss.name + ' ficou com ' + S.boss.hp + ' de vida. Pontos: ' + S.score.toLocaleString('pt-BR') + (rec.novo ? ' (novo recorde do capítulo)' : '') + '. Releia o Grimório: cada erro custa um contra-ataque.';
+  $('endActions').innerHTML = '<button class="btn primary" data-e="again">Tentar de novo</button><button class="btn" data-e="rank">Ranking</button><button class="btn" data-e="map">Capítulos</button>';
   $('endOv').hidden = false; $('endActions').querySelector('button').focus();
+  if (rec.novo) setTimeout(function(){ Ranking.after(function(){ var b = $('endActions').querySelector('button'); if (b) b.focus(); }); }, 900);
 }
 $('endActions').addEventListener('click', function(ev){
   var b = ev.target.closest('[data-e]'); if (!b) return;
   var a = b.dataset.e, i = S.ci;
+  if (a === 'rank') { Ranking.show(); return; }
   if (a === 'again') startChapter(i); else if (a === 'next' && unlocked(i + 1)) startChapter(i + 1); else showMap();
 });
 function showMap(){
@@ -1193,6 +1343,7 @@ function showMap(){
   [].forEach.call($('chapters').querySelectorAll('canvas'), function(c){ var g = c.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0); drawBoss(g, c.dataset.kind, 64, 0, 0); });
   var first = $('chapters').querySelector('[data-ch]'); if (first) first.focus({ preventScroll:true });
 }
+$('rankMap').addEventListener('click', function(){ Ranking.show(); });
 $('chapters').addEventListener('click', function(ev){ var b = ev.target.closest('[data-ch]'); if (b) startChapter(+b.dataset.ch); });
 $('mapBtn').addEventListener('click', function(){ if (S && S.state === 'play' && !confirmLeave()) return; showMap(); });
 var leaveArmed = false;

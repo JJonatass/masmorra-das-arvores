@@ -20,6 +20,7 @@ Recursos comuns aos jogos:
 - **Instruções antes de cada atividade:** uma janela com os passos numerados e um exemplo desenhado aparece antes de cada jogo, capítulo ou andar, e de novo quando a Queda das Chaves vira AVL. Os botões *Como jogar* e *Instruções* reabrem a janela durante o jogo.
 - **Dica em camadas** (tecla `H`): a 1ª camada mostra os fatos da árvore na tela, por exemplo quais chaves ficam de cada lado, as cores de X, P, T e A ou as alturas. A 2ª conclui o raciocínio. Usar dica custa pontos ou mana.
 - **Janela ao errar:** o jogo pausa e explica a jogada certa com os números daquela árvore. Nas rotações e recolorações, a árvore aparece antes e depois.
+- **Ranking geral:** soma o recorde da Queda das Chaves com os recordes de cada capítulo do Herói da Cripta. Quem entra no top 10 deixa um nome de até 5 caracteres; a tela de ranking destaca os três primeiros e mostra os pontos de cada jogo separadamente.
 - **Todas as etapas liberadas:** dá para começar em qualquer onda, capítulo ou andar.
 
 ## Em sala
@@ -39,14 +40,24 @@ src/
   *.template.html     interface de cada jogo
 tests/                testes do motor e das dicas (Node)
 build.js              gera index.html e jogos/ a partir de src/, com as fontes embutidas
+api/ranking.js        função da Vercel que guarda o ranking no Vercel Blob
 ```
+
+## Ranking
+
+O ranking fica na Vercel. A função `api/ranking.js` grava cada jogador como um arquivo minúsculo no **Vercel Blob** (loja `masmorra-ranking`), com a pontuação no próprio nome do arquivo (`r1/<id>/<queda>_<heroi>_<NOME>.txt`). Assim o ranking inteiro sai de uma única listagem, e alunos jogando ao mesmo tempo não sobrescrevem uns aos outros.
+
+- `GET /api/ranking?id=<id>` devolve o top 10 e a posição do jogador.
+- `POST /api/ranking` com `{ id, tag, queda, heroi }` guarda o melhor de cada jogo.
+
+Cada aparelho recebe um identificador próprio, guardado no navegador. Sem internet o jogo funciona normalmente: os pontos ficam guardados e são enviados na próxima vez que houver conexão. Não há login, então quem conhecer a API pode mandar pontuações falsas; para uso em sala isso costuma bastar.
 
 ## Gerar de novo
 
 ```bash
 npm install     # baixa as fontes (IM Fell English SC e Alegreya Sans)
 npm run build   # gera index.html e jogos/*.html
-npm test        # cerca de 97 mil verificações do motor e das dicas
+npm test        # motor, dicas e função do ranking
 ```
 
 Os testes conferem, em milhares de árvores sorteadas, que:
