@@ -276,6 +276,9 @@ var T = null; // estado do apresentador
 var DEFAULTS = { n:10, secs:20, topics:['bst', 'trav', 'avl', 'rb', 'splay'] };
 function newHost(mode){
   var cfg = readSetup();
+  var it = Hints.intro(mode === 'teams' ? 'arena-teams' : 'arena-live'); it.onClose = function(){ startHost(mode, cfg); }; Hints.modal(it);
+}
+function startHost(mode, cfg){
   T = { mode: mode, epoch: Date.now().toString(36), quiz: makeQuiz(cfg.n, cfg.topics), secs: cfg.secs, i: -1, phase:'lobby',
     players:{}, answers:{}, qStart:0, deadline:0, teams:[], teamHits:{}, tick:null, lastBoard:{} };
   if (mode === 'teams') { T.teams = cfg.teams.map(function(nm, i){ return { id:'t' + i, name: nm, score: 0, streak:0 }; }); }
@@ -411,6 +414,7 @@ function join(nick){
   try { localStorage.setItem('arena-nick', nick); } catch (e) {}
   room.presence({ nick: nick, ans: null }).catch(function(){});
   render();
+  if (!S.introShown) { S.introShown = true; Hints.modal(Hints.intro('arena-student')); }
 }
 function studentHint(){
   var st = S.st; if (!st || st.phase !== 'question' || !st.q.hints) return;

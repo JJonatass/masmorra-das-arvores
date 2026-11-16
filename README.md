@@ -17,6 +17,7 @@ Cada jogo é um arquivo HTML único. Funciona offline e não precisa de instala�
 
 Recursos comuns aos jogos:
 
+- **Instruções antes de cada atividade:** uma janela com os passos numerados e um exemplo desenhado aparece antes de cada jogo, capítulo ou andar, e de novo quando a Queda das Chaves vira AVL. Os botões *Como jogar* e *Instruções* reabrem a janela durante o jogo.
 - **Dica em camadas** (tecla `H`): a 1ª camada mostra os fatos da árvore na tela, por exemplo quais chaves ficam de cada lado, as cores de X, P, T e A ou as alturas. A 2ª conclui o raciocínio. Usar dica custa pontos ou mana.
 - **Janela ao errar:** o jogo pausa e explica a jogada certa com os números daquela árvore. Nas rotações e recolorações, a árvore aparece antes e depois.
 - **Todas as etapas liberadas:** dá para começar em qualquer onda, capítulo ou andar.

@@ -326,6 +326,9 @@ function badge(t, x, y){ return '<g class="badge"><circle cx="'+x+'" cy="'+y+'" 
 /* ---------- partida ---------- */
 var run = null;
 function startFloor(i){
+  var it = Hints.intro('perg-' + FLOORS[i].id); it.onClose = function(){ beginFloor(i); }; Hints.modal(it);
+}
+function beginFloor(i){
   run = { fi: i, floor: FLOORS[i], list: E.genFloor(FLOORS[i].id), idx: 0, lives: 3, errors: 0, okCount: 0 };
   $('mapView').hidden = true; $('floorView').hidden = false; $('veil').hidden = true;
   $('log').innerHTML = '';

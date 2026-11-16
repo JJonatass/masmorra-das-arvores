@@ -24,7 +24,7 @@ const games = { queda: game('arcade.template.html', true), heroi: game('heroi.te
 out('jogos/queda-das-chaves.html', offline(games.queda));
 out('jogos/heroi-da-cripta.html', offline(games.heroi));
 out('jogos/arena-das-arvores.html', offline(games.arena));
-out('jogos/masmorra-perguntas.html', offline(src('perguntas.template.html').replace('/*ENGINE*/', () => engine)));
+out('jogos/masmorra-perguntas.html', offline(game('perguntas.template.html', true)));
 
 const LS = String.fromCharCode(0x2028), PS = String.fromCharCode(0x2029);
 const safe = x => JSON.stringify(x).split('</').join('<\\/').split('<!--').join('<\\!--').split(LS).join('\\u2028').split(PS).join('\\u2029');

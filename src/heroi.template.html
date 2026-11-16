@@ -131,6 +131,7 @@ label.check input{accent-color:var(--torch);width:18px;height:18px}
       <div class="meter"><div class="head"><span>Mana</span><b id="mpText">10 / 12</b></div><div class="bar"><span id="mpFill" style="width:80%"></span></div></div>
     </div>
     <button class="hbtn" id="muteBtn">Som ligado</button>
+    <button class="hbtn" id="helpBtn">Instruções</button>
     <button class="hbtn" id="mapBtn">Capítulos</button>
   </header>
 
@@ -269,7 +270,14 @@ function buildTree(mode){
   }
   return t;
 }
+var INTRO_KIND = { rb:'heroi-rb', splay:'heroi-splay', final:'heroi-final' };
+function chapterIntro(i){ var c = CHAPTERS[i]; return Hints.intro(INTRO_KIND[c.id], { every: c.boss.every }); }
 function startChapter(i){
+  var it = chapterIntro(i); it.onClose = function(){ beginChapter(i); };
+  $('mapOv').hidden = true; $('endOv').hidden = true;
+  Hints.modal(it);
+}
+function beginChapter(i){
   audioInit(); if (AC && AC.state === 'suspended') AC.resume();
   var c = CHAPTERS[i];
   S = { ci: i, ch: c, hero:{ hp:100, max:100, mana:10, maxMana:12, potions:2 }, boss:{ name:c.boss.name, kind:c.boss.kind, hp:c.boss.hp, max:c.boss.hp, every:c.boss.every, dmg:c.boss.dmg, counter:c.boss.every, hurtT:0 },
@@ -572,6 +580,7 @@ $('chapters').addEventListener('click', function(ev){ var b = ev.target.closest(
 $('mapBtn').addEventListener('click', function(){ if (S && S.state === 'play' && !confirmLeave()) return; showMap(); });
 var leaveArmed = false;
 function confirmLeave(){ if (leaveArmed) { leaveArmed = false; return true; } leaveArmed = true; toast('Clique de novo em Capítulos para abandonar a luta.', true); setTimeout(function(){ leaveArmed = false; }, 3000); return false; }
+$('helpBtn').addEventListener('click', function(){ if (!S) return; var it = chapterIntro(S.ci); it.button = 'Voltar à luta'; Hints.modal(it); });
 $('muteBtn').addEventListener('click', function(){ muted = !muted; this.textContent = muted ? 'Som desligado' : 'Som ligado'; });
 
 /* ---------- layout e efeitos ---------- */

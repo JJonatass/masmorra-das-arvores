@@ -226,19 +226,30 @@ var Hints = (function(E){
   /* ---------------- janela de explicação ---------------- */
   var box = null, onClose = null;
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  /* texto com **negrito** e `tecla` */
+  function fmt(t){
+    return esc(t).replace(/\*\*(.+?)\*\*/g, '<b style="color:#F2A93B">$1</b>')
+      .replace(/`([^`]+)`/g, '<kbd style="font-family:inherit;font-size:13px;font-weight:700;border:1px solid currentColor;border-radius:5px;padding:0 6px;opacity:.9">$1</kbd>');
+  }
   function modal(o){
     close(true);
     onClose = o.onClose || null;
     box = document.createElement('div');
     box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'hx-title');
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(8,7,12,.82);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow:auto';
-    var tone = o.tone === 'good' ? '#7CC39A' : '#E5604A';
-    var svgs = (o.svgs || []).map(function(v){ return '<figure style="margin:0;flex:1 1 260px;min-width:0;background:#121119;border:1px solid #45425A;border-radius:12px;padding:8px"><figcaption style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#A9A1B8;font-weight:700;margin:0 0 4px">' + esc(v.label) + '</figcaption>' + v.svg + '</figure>'; }).join('');
-    box.innerHTML = '<div style="margin:auto;max-width:860px;width:100%;background:#23222F;border:2px solid ' + tone + ';border-radius:16px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#ECE3CF;font-family:\'Alegreya Sans\',\'Trebuchet MS\',sans-serif">' +
+    var tone = o.tone === 'good' ? '#7CC39A' : o.tone === 'info' ? '#F2A93B' : '#E5604A';
+    var svgs = (o.svgs || []).map(function(v){ return '<figure style="margin:0;flex:1 1 260px;min-width:0;background:#121119;border:1px solid #45425A;border-radius:12px;padding:8px"><figcaption style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#A9A1B8;font-weight:700;margin:0 0 4px">' + fmt(v.label) + '</figcaption>' + v.svg + '</figure>'; }).join('');
+    var steps = (o.steps || []).map(function(st, i){
+      return '<li style="display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start"><span style="width:28px;height:28px;border-radius:50%;background:' + tone + ';color:#1d1408;font-weight:800;display:grid;place-items:center;font-size:15px">' + (i + 1) + '</span><span>' + fmt(st) + '</span></li>';
+    }).join('');
+    box.innerHTML = '<div style="margin:auto;max-width:880px;width:100%;background:#23222F;border:2px solid ' + tone + ';border-radius:16px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#ECE3CF;font-family:\'Alegreya Sans\',\'Trebuchet MS\',sans-serif">' +
       '<p style="margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:' + tone + '">' + esc(o.kicker || 'Por que errou') + '</p>' +
       '<h2 id="hx-title" style="font-family:\'IM Fell English SC\',Georgia,serif;font-weight:400;font-size:30px;line-height:1.1;margin:4px 0 10px">' + esc(o.title) + '</h2>' +
-      '<ul style="margin:0 0 12px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:17px;line-height:1.45">' + (o.lines || []).map(function(l){ return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' +
+      (o.intro ? '<p style="margin:0 0 12px;font-size:17px;color:#D9D0BE">' + fmt(o.intro) + '</p>' : '') +
+      (steps ? '<ol style="list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:10px;font-size:17px;line-height:1.45">' + steps + '</ol>' : '') +
+      ((o.lines || []).length ? '<ul style="margin:0 0 12px;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:17px;line-height:1.45">' + o.lines.map(function(l){ return '<li>' + fmt(l) + '</li>'; }).join('') + '</ul>' : '') +
       (svgs ? '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">' + svgs + '</div>' : '') +
+      (o.note ? '<p style="margin:0 0 14px;font-size:15px;color:#A9A1B8">' + fmt(o.note) + '</p>' : '') +
       '<div style="display:flex;justify-content:flex-end"><button type="button" id="hx-ok" style="background:#F2A93B;color:#1d1408;border:none;border-radius:10px;padding:11px 22px;font-weight:800;font-size:17px;cursor:pointer;font-family:inherit">' + esc(o.button || 'Entendi, continuar') + ' <span style="font-size:12px;border:1px solid currentColor;border-radius:4px;padding:0 5px;opacity:.75">Enter</span></button></div></div>';
     document.body.appendChild(box);
     [].forEach.call(box.querySelectorAll('figure svg'), function(v){ v.style.maxWidth = '100%'; v.style.height = 'auto'; v.style.display = 'block'; v.style.margin = '0 auto'; });
@@ -258,6 +269,120 @@ var Hints = (function(E){
   }, true);
   function isOpen(){ return !!box; }
 
+  /* ---------------- instruções antes de cada atividade ---------------- */
+  function exBST(){
+    var t = { root:null }; [30, 15, 50, 40, 60].forEach(function(k){ E.bstInsert(t, k); });
+    return { label:'Exemplo: 47 > 30 → direita · 47 < 50 → esquerda · 47 > 40 → direita: entra à direita de 40',
+      svg: svgTree(t, { marks:{ 30:'path', 50:'path', 40:'path' }, ghost:{ parent:40, side:'R', label:47 } }) };
+  }
+  function exAVL(){
+    var t = { root:null }; [40, 20, 30].forEach(function(k){ E.bstInsert(t, k); });
+    var t2 = E.clone(t); E.avlApply(t2, E.find(t2, 40), 'LR');
+    return [{ label:'Antes: 30 entrou e 40 ficou com fb +2', svg: svgTree(t, { marks:{ 40:'bad', 30:'fresh' }, bf:[40] }) },
+            { label:'40 pesa à esquerda (←); 30 entrou à direita de 20 (→): caso LR. Depois:', svg: svgTree(t2, { marks:{ 30:'ok' }, bf:[30] }) }];
+  }
+  function exRB(){
+    var a = { root:null }; [50, 30, 70].forEach(function(k){ E.rbInsert(a, k); }); var xa = E.bstInsert(a, 20); xa.color = 'R';
+    var b = { root:null }; [50, 30].forEach(function(k){ E.rbInsert(b, k); }); var xb = E.bstInsert(b, 20); xb.color = 'R';
+    return [{ label:'Tio vermelho (70): Recolorir', svg: svgTree(a, { rb:true, marks:{ 20:'cur' }, badges:{ 20:'X', 30:'P', 50:'A', 70:'T' } }) },
+            { label:'Tio NIL e linha reta (20, 30, 50 à esquerda): Giro simples', svg: svgTree(b, { rb:true, marks:{ 20:'cur' }, badges:{ 20:'X', 30:'P', 50:'A' }, nil:{ g:50, side:'R' } }) }];
+  }
+  function exSplay(){
+    var t = { root:null }; [50, 30, 70, 20, 40].forEach(function(k){ E.bstInsert(t, k); });
+    var t2 = E.clone(t), x = E.find(t2, 20); E.splayApply(t2, x, 'zigzig');
+    return [{ label:'X = 20 e P = 30 são filhos esquerdos: Zig-zig', svg: svgTree(t, { marks:{ 20:'cur' }, badges:{ 20:'X', 30:'P', 50:'A' } }) },
+            { label:'Depois: 20 subiu dois níveis e virou a raiz', svg: svgTree(t2, { marks:{ 20:'cur' } }) }];
+  }
+  function intro(kind, o){
+    o = o || {};
+    var I = {
+      queda: { kicker:'Como jogar', title:'A Queda das Chaves', intro:'Você guia cada chave que cai até a vaga certa da árvore binária de busca.', button:'Começar', svgs:[exBST()], steps:[
+        'Uma **chave** (a bola dourada com um número) cai do portal e para em cima de uma sala.',
+        'Compare os dois números. Chave **menor** que a sala: aperte `←` (ou `A`). Chave **maior**: aperte `→` (ou `D`). No celular, use os botões ◀ e ▶.',
+        'Decida **antes que o anel em volta da chave se apague**. Se acertar, a chave desce para a próxima sala e você decide de novo.',
+        'Quando não houver sala do lado escolhido, a chave **encaixa** ali (contorno verde) e você ganha pontos. Acertos seguidos aumentam o multiplicador.',
+        'A partir da **onda 3** a árvore vira AVL e você também vai girar salas. As regras novas aparecem quando chegar lá.',
+        'Travou? `H` abre uma **dica** (custa pontos e dá mais tempo). Errou? O jogo pausa e explica. Você tem 3 vidas, e uma onda sem erros devolve uma. `P` pausa.'] },
+      'queda-avl': { kicker:'Nova regra · onda ' + (o.wave || 3), title:'A Balança desperta: árvore AVL', intro:'Agora toda sala precisa ficar equilibrada: a diferença de altura entre o lado esquerdo e o direito (fb) só pode ser −1, 0 ou +1.', button:'Continuar a onda', svgs: exAVL(), steps:[
+        'As chaves continuam caindo como antes: `←` para menor, `→` para maior.',
+        'Se uma chave desequilibrar a árvore, a tela **treme** e a sala desequilibrada fica **vermelha**, com um relógio em volta.',
+        '**1ª seta:** o lado da sala vermelha que está **mais fundo**, isto é, que desce mais níveis.',
+        '**2ª seta:** olhe o filho desse lado e veja de que lado dele a **chave nova** (contorno verde) entrou.',
+        '`←` `←` = LL · `→` `→` = RR · `←` `→` = LR · `→` `←` = RL. A rotação acontece sozinha e a árvore volta ao equilíbrio.'] },
+      'heroi-rb': { kicker:'Capítulo 1 · Como jogar', title:'A Cripta Rubro-Negra', intro:'Você insere chaves numa árvore rubro-negra e quebra as maldições vermelho-vermelho. Cada acerto fere o Lich Rubro.', button:'Entrar na cripta', svgs: exRB(), steps:[
+        '**Leve a chave até a vaga.** O herói começa na raiz segurando a chave. Use `←` se ela for menor que a sala onde você está e `→` se for maior. Passo errado é armadilha e tira vida.',
+        '**A chave entra vermelha** e vira **X**. Aparecem as marcas **P** (pai), **T** (tio, o outro filho do avô) e **A** (avô). Uma vaga vazia aparece como **NIL** e conta como preta.',
+        '**Escolha o feitiço** com as teclas `1` a `5`, respondendo nesta ordem. X é a raiz e está vermelha? Então **Pintar a raiz**. O pai P é preto? Então **Selar** (nada a fazer).',
+        'Pai vermelho e **tio vermelho**: **Recolorir**. P e T ficam pretos e A fica vermelho. O conflito pode subir: A vira o novo X e você decide de novo.',
+        'Pai vermelho e **tio preto ou NIL**: é hora de girar. X, P e A em **linha reta**: **Giro simples**. Em **zigue-zague**: **Giro duplo**.',
+        'Feitiços gastam **mana**. `E` medita (+5 de mana) e `Q` bebe uma poção (+35 de vida), mas ambos gastam um turno. O chefe ataca a cada ' + (o.every || 5) + ' turnos e contra-ataca a cada erro.',
+        '`H` abre uma dica (custa 1 de mana). Ao errar, uma janela explica a jogada certa. Zere a vida do chefe para vencer.'] },
+      'heroi-splay': { kicker:'Capítulo 2 · Como jogar', title:'A Escada Giratória', intro:'Você encontra as salas que o chefe pede e as sobe até a raiz da árvore splay. Cada acerto fere o Guardião Espiral.', button:'Subir a escada', svgs: exSplay(), steps:[
+        '**O chefe pede uma chave.** O herói começa na raiz. Desça até a sala com esse número: `←` se a chave pedida for menor que a sala atual, `→` se for maior. Passo errado é armadilha.',
+        'A sala pedida tem um **baú** brilhando embaixo. Ao chegar nela, ela vira **X**, com **P** (pai) e **A** (avô) marcados.',
+        '**Suba X até a raiz** com feitiços. Se o pai é a raiz: **Zig** (`1`). Se X e o pai são filhos do **mesmo lado**: **Zig-zig** (`2`). Se são de **lados opostos**: **Zig-zag** (`3`).',
+        'Repita até X virar a raiz. Cada feitiço sobe X um ou dois níveis.',
+        'Repare: uma chave pedida de novo já está **perto da raiz**. Essa é a vantagem da árvore splay.',
+        'Feitiços gastam mana (`E` medita, `Q` poção). O chefe ataca a cada ' + (o.every || 5) + ' turnos e contra-ataca nos erros. `H` dá uma dica. Zere a vida do chefe para vencer.'] },
+      'heroi-final': { kicker:'Capítulo 3 · Como jogar', title:'O Trono das Raízes', intro:'O chefe final mistura as duas masmorras. Tudo o que você aprendeu nos capítulos 1 e 2 vale aqui.', button:'Enfrentar o rei', steps:[
+        'O Rei das Raízes **alterna as masmorras**: um desafio na rubro-negra, outro na splay, e assim por diante. Uma faixa avisa cada troca.',
+        '**Na rubro-negra:** leve a chave até a vaga e corrija com Selar, Recolorir, Giro simples, Giro duplo ou Pintar a raiz (`1` a `5`).',
+        '**Na splay:** encontre a sala pedida e suba-a com Zig, Zig-zig ou Zig-zag (`1` a `3`).',
+        'O rei tem mais vida e ataca a cada ' + (o.every || 4) + ' turnos. Use `E` (meditar), `Q` (poção) e `H` (dica) com cuidado.',
+        'O **Grimório**, à direita, sempre mostra as regras da masmorra do momento.'] },
+      'arena-teams': { kicker:'Arena · modo equipes', title:'Como funciona a partida', intro:'Leia estes passos para a turma antes de começar.', button:'Ir para as equipes', steps:[
+        'Cada equipe precisa de quatro cartões: **A ▲**, **B ◆**, **C ●** e **D ■**. Podem ser folhas de papel com a letra ou a forma.',
+        'No telão aparecem a **pergunta**, a **árvore** e quatro opções coloridas. O cronômetro corre no topo.',
+        'As equipes **discutem** e, antes de o tempo acabar, **levantam o cartão** com a resposta. Vale o primeiro cartão levantado.',
+        'O professor clica **Revelar agora**, ou espera o tempo acabar. A opção certa fica destacada, com a explicação.',
+        'Marque as equipes que **acertaram** e clique **Confirmar pontos** (1.000 por acerto). Depois **Ver placar** e **Próxima pergunta**.',
+        'Se a turma travar, `H` mostra uma **dica** no telão: a 1ª camada diz o que olhar, a 2ª mostra o raciocínio. **Explicar em tela cheia** amplia a explicação.'] },
+      'arena-live': { kicker:'Arena · sala ao vivo', title:'Como funciona a partida', intro:'Os alunos jogam pelo celular e o telão conduz a partida.', button:'Abrir a sala', steps:[
+        'Peça aos alunos que **abram este mesmo artefato** no celular e digitem um **apelido**. Os nomes aparecem no telão.',
+        'Clique **Começar**. Cada pergunta aparece no telão e nos celulares, com o cronômetro.',
+        'Os alunos **tocam numa das quatro opções**. Acertar rápido vale mais: até 1.000 pontos, com bônus de 100 a partir de 3 acertos seguidos.',
+        'Quando todos respondem, ou o tempo acaba, a resposta é **revelada**. O telão mostra quantos escolheram cada opção; cada celular mostra o resultado e, para quem errou, uma janela com a explicação.',
+        'Use **Ver placar** e **Próxima pergunta**. No fim aparece o pódio.',
+        '`H` ou **Mostrar dica** libera uma dica para todos, sem desconto. A dica que o aluno abre sozinho no celular tira 25% dos pontos daquela pergunta.'] },
+      'arena-student': { kicker:'Arena · como jogar', title:'Você entrou na arena', button:'Entendi', steps:[
+        'Aguarde o professor começar. Cada pergunta aparece aqui e no telão.',
+        'Olhe a **árvore** e toque na opção certa antes de o tempo acabar. Você só pode responder uma vez.',
+        'Acertar **rápido** vale mais pontos, até 1.000 por pergunta.',
+        'Travou? O botão **Dica** ajuda, mas cada camada tira 25% dos pontos daquela pergunta.',
+        'Na revelação você vê se acertou, sua pontuação e sua posição. Se errar, uma janela explica a resposta certa.'] },
+      'perg-bst': { kicker:'Andar 1 · Como jogar', title:'O Corredor da Busca', intro:'Em cada desafio aparece uma árvore binária de busca e uma chave nova.', button:'Começar o andar', svgs:[exBST()], steps:[
+        'Leia a **chave nova** no título do desafio.',
+        'Partindo da **raiz**, compare: chave menor que a sala → desce pela **esquerda**; maior → pela **direita**. Continue até não haver sala.',
+        'Clique na **vaga tracejada** onde a chave deve entrar.',
+        'Se errar, você perde uma vida (♥) e o jogo aponta onde o caminho desviou. Tente de novo.',
+        'São 5 desafios e 3 vidas. Nenhum erro dá 3 estrelas, um erro dá 2 e mais erros dão 1.'] },
+      'perg-avl': { kicker:'Andar 2 · Como jogar', title:'A Balança do Equilíbrio', intro:'A chave nova (contorno verde) já entrou na árvore AVL e desequilibrou alguma sala.', button:'Começar o andar', svgs: exAVL(), steps:[
+        'Suba da chave nova em direção à raiz e calcule o **fb** de cada sala: altura da esquerda menos altura da direita.',
+        'Clique na sala desequilibrada **mais baixa**, a primeira com fb +2 ou −2.',
+        'Escolha a **rotação**. 1ª letra: o lado mais fundo da sala (L esquerda, R direita). 2ª letra: o lado do filho onde a chave entrou.',
+        'LL e RR são rotações simples; LR e RL são duplas. Depois da rotação, todos os fb voltam para −1, 0 ou +1.',
+        'São 5 desafios e 3 vidas. Cada erro mostra uma pista.'] },
+      'perg-rb': { kicker:'Andar 3 · Como jogar', title:'A Cripta Rubro-Negra', intro:'A chave nova entrou vermelha (X). Decida, passo a passo, como deixar a árvore válida.', button:'Começar o andar', svgs: exRB(), steps:[
+        'Observe as marcas: **X** (chave em conflito), **P** (pai), **T** (tio) e **A** (avô). NIL é uma vaga vazia e conta como preta.',
+        'X é a raiz e está vermelha? Então **Pintar a raiz**. O pai é preto? Então **Nada a fazer**.',
+        'Pai e **tio vermelhos**: **Recolorir**. O conflito pode subir para o avô, que vira o novo X; decida de novo.',
+        'Pai vermelho e **tio preto ou NIL**: X, P e A em linha reta → **Rotação simples**; em zigue-zague → **Rotação dupla**.',
+        'Escolha com o mouse ou com as teclas `1` a `5`. São 5 desafios e 3 vidas.'] },
+      'perg-splay': { kicker:'Andar 4 · Como jogar', title:'A Escada Giratória', intro:'A sala acessada (X) precisa subir até a raiz.', button:'Começar o andar', svgs: exSplay(), steps:[
+        'Observe **X** (sala acessada), **P** (pai) e **A** (avô).',
+        'O pai é a raiz? Escolha **Zig**.',
+        'X e o pai são filhos do **mesmo lado**? Escolha **Zig-zig**. De **lados opostos**? Escolha **Zig-zag**.',
+        'Repita até X chegar à raiz. Escolha com o mouse ou com as teclas `1` a `3`.',
+        'São 4 desafios e 3 vidas.'] },
+      'perg-boss': { kicker:'Andar 5 · Como jogar', title:'O Guardião das Raízes', intro:'O chefão mistura os quatro andares.', button:'Enfrentar o guardião', steps:[
+        'São **8 desafios** seguidos, sorteados entre BST, AVL, rubro-negra e splay, com as mesmas **3 vidas**.',
+        'O rótulo no topo de cada desafio diz **qual árvore** é. Use a regra daquele andar.',
+        'O quadro **Regra do andar**, à direita, muda junto com o desafio.',
+        'Vencer o guardião conclui a era das árvores de busca.'] }
+    };
+    var c = I[kind]; c.tone = 'info'; return c;
+  }
+
   return { step:step, explainStep:explainStep, avl:avl, explainAVL:explainAVL, avlFind:avlFind, rb:rb, explainRB:explainRB, splay:splay, explainSplay:explainSplay,
-    insert:insert, search:search, trav:trav, svgTree:svgTree, modal:modal, close:close, isOpen:isOpen, RBN:RBN };
+    insert:insert, search:search, trav:trav, svgTree:svgTree, modal:modal, close:close, isOpen:isOpen, RBN:RBN, intro:intro };
 })(Engine);

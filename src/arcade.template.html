@@ -118,6 +118,7 @@ label.check input{accent-color:var(--torch);width:18px;height:18px}
     <div class="stat"><span>Recorde</span><b id="best">0</b></div>
     <div class="hearts" id="hearts" aria-label="Vidas"></div>
     <button class="hbtn" id="muteBtn" aria-pressed="false">Som ligado <kbd>M</kbd></button>
+    <button class="hbtn" id="helpBtn">Como jogar</button>
     <button class="hbtn" id="pauseBtn">Pausar <kbd>P</kbd></button>
   </header>
 
@@ -140,6 +141,7 @@ label.check input{accent-color:var(--torch);width:18px;height:18px}
           <button class="btn primary" id="startBtn">Começar <kbd>Enter</kbd></button>
           <label class="check"><input type="checkbox" id="practice"> Treino: sem relógio</label>
           <label class="check"><input type="checkbox" id="explainOpt" checked> Explicar cada erro numa janela</label>
+          <label class="check"><input type="checkbox" id="introOpt" checked> Mostrar as instruções antes de jogar</label>
           <label class="check">Começar na <select id="startWave" style="background:var(--stone-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:var(--body);font-size:15px"><option value="1">onda 1 · BST</option><option value="2">onda 2 · BST</option><option value="3">onda 3 · AVL</option><option value="4">onda 4 · AVL</option><option value="5">onda 5 · AVL</option><option value="6">onda 6 · AVL rápida</option><option value="8">onda 8 · AVL muito rápida</option></select></label>
         </div>
         <p class="bestline" id="bestLine"></p>
@@ -222,7 +224,7 @@ window.addEventListener('resize', resize); resize();
 /* ---------- estado ---------- */
 var G = null;
 function newGame(practice, startWave){
-  G = { state:'intro', practice: practice, explain: $('explainOpt').checked, modal:false, tree:{ root:null }, disp:{}, fresh:{}, score:0, combo:0, lives:3, wave:0, avl:false,
+  G = { state:'intro', practice: practice, explain: $('explainOpt').checked, showIntro: $('introOpt').checked, avlIntro:false, modal:false, tree:{ root:null }, disp:{}, fresh:{}, score:0, combo:0, lives:3, wave:0, avl:false,
     spawned:0, perWave:0, orb:null, bal:null, parts:[], floats:[], shake:0, spawnDelay:0, banner:null, introT:0, errWave:0,
     mistakes:[], stats:{ dec:0, ok:0, inserted:0, rot:0, rotOk:0, bestCombo:0, waves:0, hints:0 }, time:0, hint:{ ctx:null, level:0 } };
   G.wave = Math.max(0, (startWave || 1) - 1);
@@ -242,6 +244,7 @@ function nextWave(){
   if (G.wave === 3 || (G.avl && G.stats.inserted === 0 && G.stats.dec === 0)) { title = 'Onda ' + G.wave + ' · A Balança desperta'; sub = 'Agora a árvore é AVL. Quando tremer: 1ª seta = lado que pesa, 2ª = lado do filho.'; }
   G.banner = { title: title, sub: sub, t: 0, dur: G.wave === 3 ? 3.4 : 2.0 };
   G.state = 'intro';
+  if (G.avl && !G.avlIntro && G.showIntro) { G.avlIntro = true; G.modal = true; var ai = Hints.intro('queda-avl', { wave: G.wave }); ai.onClose = function(){ if (G) G.modal = false; }; Hints.modal(ai); }
   $('padmid').innerHTML = '<span>' + (G.avl ? 'Desequilíbrio: <b>1ª seta</b> lado que pesa, <b>2ª</b> lado do filho.' : 'Menor à <b>esquerda</b>, maior à <b>direita</b>.') + '</span>';
   hud();
 }
@@ -581,6 +584,10 @@ requestAnimationFrame(loop);
 
 /* ---------- controles ---------- */
 function start(){
+  if ($('introOpt').checked) { var it = Hints.intro('queda'); it.onClose = realStart; Hints.modal(it); return; }
+  realStart();
+}
+function realStart(){
   $('hintbox').hidden = true;
   audioInit(); if (AC && AC.state === 'suspended') AC.resume();
   newGame($('practice').checked, +$('startWave').value || 1);
@@ -600,6 +607,11 @@ $('resumeBtn').addEventListener('click', togglePause);
 $('quitBtn').addEventListener('click', function(){ $('pauseOv').hidden = true; G.lives = 0; gameOver(); });
 $('pauseBtn').addEventListener('click', togglePause);
 $('hintBtn').addEventListener('click', askHint);
+$('helpBtn').addEventListener('click', function(){
+  var it = Hints.intro(G && G.avl ? 'queda-avl' : 'queda', { wave: G ? G.wave : 3 }); it.button = 'Voltar ao jogo';
+  if (G) { G.modal = true; it.onClose = function(){ if (G) G.modal = false; }; }
+  Hints.modal(it);
+});
 $('muteBtn').addEventListener('click', function(){ muted = !muted; this.setAttribute('aria-pressed', muted); this.innerHTML = (muted ? 'Som desligado' : 'Som ligado') + ' <kbd>M</kbd>'; });
 ['L', 'R'].forEach(function(d){
   var b = $('btn' + d);
