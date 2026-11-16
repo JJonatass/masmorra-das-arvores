@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Forja de Huffman</title>
+<style>
+:root{
+  --bg:#16151F; --stone:#23222F; --stone-2:#2E2C3D; --line:#45425A;
+  --ink:#ECE3CF; --muted:#A9A1B8; --torch:#F2A93B; --ember:#E5604A; --moss:#7CC39A; --gold:#F2C14E;
+  --display:'IM Fell English SC', Georgia, serif;
+  --body:'Alegreya Sans', 'Trebuchet MS', Verdana, sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;
+  background-image:radial-gradient(1200px 500px at 30% -10%, #3a2618 0%, transparent 60%);background-attachment:fixed}
+button{font-family:var(--body);font-size:16px;cursor:pointer;color:inherit}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1320px;margin:0 auto;padding:14px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.brand{flex:1;min-width:220px}
+.brand small{display:block;color:var(--torch);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.brand h1{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1.05}
+.stat{display:flex;flex-direction:column;align-items:flex-end}
+.stat span{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.stat b{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat b.gold{color:var(--gold)}
+.hbtn{background:var(--stone-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px}
+.hbtn:hover{border-color:var(--torch)}
+kbd{font-family:var(--body);font-size:12px;font-weight:700;border:1px solid currentColor;border-radius:5px;padding:0 5px;opacity:.85}
+.stages{display:flex;flex-wrap:wrap;gap:8px}
+.stg{display:flex;align-items:center;gap:8px;background:var(--stone);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 6px;font-size:15px;color:var(--muted)}
+.stg i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--stone-2);font-weight:800;font-size:13px}
+.stg.cur{border-color:var(--torch);color:var(--ink)} .stg.cur i{background:var(--torch);color:#1d1408}
+.stg.done{color:var(--moss)} .stg.done i{background:var(--moss);color:#14301f}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+.forge{background:#100F17;border:1px solid var(--line);border-radius:14px;min-height:360px;padding:10px;display:flex;align-items:center;justify-content:center;overflow:auto}
+.forge svg{display:block;max-width:100%;height:auto}
+.node{cursor:default}
+.node.pick{cursor:pointer}
+.node.pick:hover rect,.node.pick:hover circle{stroke:var(--torch)}
+.prompt{background:var(--stone);border:1px solid var(--line);border-left:5px solid var(--torch);border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.prompt h2{font-family:var(--display);font-weight:400;font-size:25px;margin:0;line-height:1.15}
+.prompt p{margin:0}
+.feedback{min-height:1.45em;font-weight:500}
+.feedback.good{color:#B7F0CC} .feedback.bad{color:#FFB3A6}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--stone-2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 18px;font-weight:700}
+.btn:hover:not(:disabled){border-color:var(--torch)}
+.btn.primary{background:var(--torch);color:#1d1408;border-color:var(--torch)}
+.btn.bit{font-size:26px;min-width:110px;padding:10px 18px}
+.btn.letter{font-family:var(--display);font-size:24px;min-width:52px;padding:6px 10px}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--stone);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 8px}
+.word{font-family:var(--display);font-size:28px;letter-spacing:.12em;display:flex;flex-wrap:wrap;gap:2px}
+.word span{padding:0 2px;border-bottom:3px solid transparent}
+.word span.cur{color:var(--torch);border-color:var(--torch)}
+.word span.done{color:var(--moss)}
+.word span.hid{color:var(--muted)}
+.freq{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;align-items:center;font-size:15px}
+.freq b{font-family:var(--display);font-size:18px}
+.freq i{display:block;height:10px;border-radius:5px;background:var(--torch)}
+.bits{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:20px;line-height:1.7;word-break:break-all;background:#121119;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.bits .seg{display:inline-block;vertical-align:top;text-align:center;border-radius:4px;padding:1px 3px;margin:0 4px 4px 0}
+.bits .seg.ok{background:rgba(124,195,154,.18);color:#B7F0CC}
+.bits .seg small{display:block;font-family:var(--display);font-size:15px;text-align:center;color:var(--moss);line-height:1.1}
+.bits .cursor{background:rgba(242,169,59,.25);color:var(--torch);border-radius:3px}
+.bits .rest{color:var(--muted)}
+.cmp{display:flex;flex-direction:column;gap:8px}
+.cmp .row{display:grid;grid-template-columns:150px 1fr 70px;gap:8px;align-items:center;font-size:15px}
+.cmp .bar{height:16px;border-radius:8px;background:var(--stone-2);overflow:hidden}
+.cmp .bar span{display:block;height:100%}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat b.time{font-variant-numeric:tabular-nums;min-width:5.2ch;display:inline-block}
+.stat b.pen{color:var(--ember)}
+@media (max-width:980px){ .main{grid-template-columns:1fr} }
+@media (max-width:600px){ .summary{grid-template-columns:1fr} .brand h1{font-size:24px} .cmp .row{grid-template-columns:110px 1fr 60px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><small>Masmorra · Huffman</small><h1>A Forja de Huffman</h1></div>
+    <div class="stat"><span>Tempo</span><b id="time" class="gold time">0:00,0</b></div>
+    <div class="stat"><span>Penalidade</span><b id="pen" class="pen">+0 s</b></div>
+    <div class="stat"><span>Melhor por letra</span><b id="best" class="time">–</b></div>
+    <div class="stat"><span>Forja</span><b id="round">1</b></div>
+    <button class="hbtn" id="rankBtn">Ranking</button>
+    <button class="hbtn" id="helpBtn">Como jogar</button>
+    <button class="hbtn" id="hintBtn">Dica <kbd>H</kbd></button>
+  </header>
+  <div class="stages" id="stages"></div>
+  <div class="main">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="forge" id="forge" aria-live="polite"></div>
+      <div class="prompt" id="prompt">
+        <h2 id="pTitle"></h2>
+        <p id="pText"></p>
+        <p class="feedback" id="feedback"></p>
+        <div class="actions" id="actions"></div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="card"><h3>Pergaminho</h3><div id="scroll"></div></div>
+      <div class="card"><h3>Frequências</h3><div class="freq" id="freq"></div></div>
+      <div class="card" id="outCard"><h3 id="outTitle">Mensagem</h3><div id="out"></div></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+var TM = Tempo.create({ board: 'huffman', per: true, focusAfter: 'rankBtn', count: function(x){ return (x.w1 || '').length + (x.w2 || '').length; } });
+
+/* ---------- desenho da árvore de Huffman ---------- */
+var LW = 50, DY = 70, TOP = 30;
+function depthOf(n){ return !n || n.ch ? 0 : 1 + Math.max(depthOf(n.left), depthOf(n.right)); }
+function leaves(n){ return n.ch ? 1 : leaves(n.left) + leaves(n.right); }
+function layout(root, x0){
+  var i = 0, items = [], edges = [];
+  (function w(n, d){
+    var y = TOP + d * DY, me;
+    if (n.ch) { me = { n: n, x: x0 + i * LW + LW / 2, y: y }; i++; items.push(me); return me; }
+    var l = w(n.left, d + 1), r = w(n.right, d + 1);
+    me = { n: n, x: (l.x + r.x) / 2, y: y }; items.push(me);
+    edges.push({ a: me, b: l, bit: '0' }, { a: me, b: r, bit: '1' });
+    return me;
+  })(root, 0);
+  return { items: items, edges: edges, w: i * LW };
+}
+/* o: pick (ids clicáveis), sel (ids selecionados), path (ids no caminho), ok (ids marcados), leafPick, dimLetters */
+function drawForest(trees, o){
+  o = o || {};
+  var x = 10, all = [], ed = [], maxD = 0;
+  trees.forEach(function(t){ var L = layout(t, x); all = all.concat(L.items); ed = ed.concat(L.edges); x += L.w + 22; maxD = Math.max(maxD, depthOf(t)); });
+  var W = Math.max(x - 12, 120), H = TOP * 2 + maxD * DY + 40;
+  var path = o.path || {}, sel = o.sel || {}, okm = o.ok || {}, pick = o.pick || {};
+  var s = '';
+  ed.forEach(function(e){
+    var hot = path[e.a.n.id] && path[e.b.n.id];
+    s += '<line x1="' + e.a.x + '" y1="' + e.a.y + '" x2="' + e.b.x + '" y2="' + e.b.y + '" stroke="' + (hot ? '#F2A93B' : '#5B5674') + '" stroke-width="' + (hot ? 4 : 2.5) + '"/>';
+    var mx = (e.a.x + e.b.x) / 2 + (e.bit === '0' ? -9 : 9), my = (e.a.y + e.b.y) / 2 - 4;
+    s += '<text x="' + mx + '" y="' + my + '" fill="' + (hot ? '#F2A93B' : '#A9A1B8') + '" font-size="13" font-weight="800" text-anchor="middle" dominant-baseline="central">' + e.bit + '</text>';
+  });
+  all.forEach(function(it){
+    var n = it.n, id = n.id, stroke = '#45425A', sw = 2, fill = n.ch ? '#23222F' : '#2E2C3D';
+    if (path[id]) { stroke = '#F2A93B'; sw = 3.5; }
+    if (okm[id]) { stroke = '#7CC39A'; sw = 4; }
+    if (sel[id]) { stroke = '#F2A93B'; sw = 5; fill = '#3A3122'; }
+    var cls = 'node' + (pick[id] ? ' pick' : ''), attr = pick[id] ? ' data-id="' + id + '" tabindex="0" role="button" aria-label="' + (n.ch ? 'Runa ' + n.ch + ', peso ' + n.w : 'Runa de peso ' + n.w + ' (' + Huff.letters(n).join('') + ')') + '"' : '';
+    if (n.ch) {
+      var lp = o.leafPick ? ' data-ch="' + n.ch + '" tabindex="0" role="button" aria-label="Letra ' + n.ch + '"' : '';
+      s += '<g class="' + cls + (o.leafPick ? ' pick' : '') + '"' + attr + lp + '><rect x="' + (it.x - 20) + '" y="' + (it.y - 22) + '" width="40" height="46" rx="7" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + sw + '"/>' +
+        '<text x="' + it.x + '" y="' + (it.y - 5) + '" fill="#ECE3CF" font-size="21" font-weight="800" text-anchor="middle" dominant-baseline="central" style="font-family:\'IM Fell English SC\',Georgia,serif">' + n.ch + '</text>' +
+        '<text x="' + it.x + '" y="' + (it.y + 15) + '" fill="#F2C14E" font-size="12" font-weight="700" text-anchor="middle" dominant-baseline="central">' + n.w + '</text></g>';
+    } else {
+      s += '<g class="' + cls + '"' + attr + '><circle cx="' + it.x + '" cy="' + it.y + '" r="18" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + sw + '"/>' +
+        '<text x="' + it.x + '" y="' + (it.y + 1) + '" fill="#F2C14E" font-size="14" font-weight="800" text-anchor="middle" dominant-baseline="central">' + n.w + '</text></g>';
+    }
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" role="img" aria-label="Árvore de Huffman" style="font-family:\'Alegreya Sans\',sans-serif">' + s + '</svg>';
+}
+function idset(list){ var m = {}; list.forEach(function(n){ m[n.id] = 1; }); return m; }
+
+/* ---------- estado ---------- */
+var G = null;
+var STAGES = ['Forjar a árvore', 'Texto → binário', 'Binário → texto'];
+function newRound(first){
+  var pair = Huff.pickWords();
+  G = G || { round: 0, seenIntro: {} };
+  G.round++; G.w1 = pair[0]; G.w2 = pair[1]; G.text = G.w1 + G.w2;
+  G.forest = Huff.newForest(G.text); G.sel = null; G.root = null; G.stage = 0; G.errs = 0; G.hints = 0; G.res = null; TM.start();
+  G.i = 0; G.bit = ''; G.bits2 = ''; G.pos = 0; G.decoded = ''; G.hint = { ctx: null, level: 0 }; G.encoded = [];
+  render(); stageIntro();
+}
+function stageIntro(){
+  var k = ['forjar', 'codificar', 'decifrar'][G.stage];
+  if (G.round > 1 || G.seenIntro[k]) return;
+  G.seenIntro[k] = 1; Hints.modal(INTRO[k]());
+}
+var INTRO = {
+  forjar: function(){ return { tone:'info', kicker:'Etapa 1 de 3 · Como jogar', title:'Forjar a árvore', button:'Começar a forjar',
+    intro:'O pergaminho traz duas palavras sorteadas. Cada letra delas vira uma runa, com o peso igual ao número de vezes que aparece.', steps:[
+    'Olhe os **pesos** das runas na forja (o número amarelo).',
+    'Clique nas **duas runas mais leves**. Elas se fundem numa runa nova, com o peso somado. A mais leve fica à esquerda (bit **0**) e a outra à direita (bit **1**).',
+    'Repita até sobrar **uma runa só**: essa é a árvore de Huffman.',
+    'Empatou? Qualquer par com os dois menores pesos vale.',
+    'Por que as mais leves? Assim as letras raras ficam no fundo, com códigos longos, e as frequentes ficam perto da raiz, com códigos curtos.',
+    '`H` dá dica. Errou? Uma janela explica.'] }; },
+  codificar: function(){ return { tone:'info', kicker:'Etapa 2 de 3 · Como jogar', title:'Texto → binário', button:'Codificar',
+    intro:'Agora você transforma a 1ª palavra do pergaminho em bits, usando a árvore que acabou de forjar.', steps:[
+    'A letra da vez fica em destaque no pergaminho.',
+    'Desça da **raiz** até a folha dessa letra. Cada passo à **esquerda** vale `0`; cada passo à **direita** vale `1`.',
+    'Digite os bits com `0`/`1` (ou `←`/`→`, ou os botões). O caminho acende na árvore a cada bit.',
+    'Ao chegar na folha, o código da letra se junta à mensagem e você passa para a próxima letra.',
+    'No fim, compare: quantos bits a sua árvore usou e quantos o ASCII (8 por letra) usaria.'] }; },
+  decifrar: function(){ return { tone:'info', kicker:'Etapa 3 de 3 · Como jogar', title:'Binário → texto', button:'Decifrar',
+    intro:'Chegou uma mensagem só em bits: é a 2ª palavra do pergaminho, que ficou escondida. Decifre-a com a mesma árvore.', steps:[
+    'Comece na **raiz** e leia os bits a partir do cursor: `0` desce à esquerda, `1` desce à direita.',
+    'Quando chegar a uma **folha**, você achou uma letra. Digite essa letra no teclado, ou clique na folha, ou use os botões de letra.',
+    'Os bits daquela letra ficam marcados, e você volta à raiz para ler a próxima.',
+    'Nenhum código é começo de outro, por isso sempre se sabe onde uma letra termina.'] }; }
+};
+
+/* ---------- etapa 1: forja ---------- */
+function forgePick(id){
+  if (G.stage !== 0) return;
+  var n = G.forest.filter(function(x){ return x.id === id; })[0]; if (!n) return;
+  if (!G.sel) { G.sel = n; render(); return; }
+  if (G.sel === n) { G.sel = null; render(); return; }
+  var a = G.sel, b = n; G.sel = null;
+  if (!Huff.validPair(G.forest, a, b)) { return mistake(explainForge(a, b)); }
+  var r = Huff.merge(G.forest, a, b); G.forest = r.forest; G.lastMerged = r.node.id;
+  feedback('Fundiu ' + label(a) + ' + ' + label(b) + ' = ' + r.node.w + '.', 'good');
+  if (G.forest.length === 1) { G.root = G.forest[0]; G.stage = 1; G.codes = Huff.codes(G.root); feedback('Árvore pronta! Agora codifique a 1ª palavra.', 'good'); render(); stageIntro(); return; }
+  render();
+}
+function label(n){ return n.ch ? n.ch + ' (' + n.w + ')' : n.w + ' (' + Huff.letters(n).join('') + ')'; }
+function sortedWeights(){ return Huff.sortedForest(G.forest).map(function(n){ return n.w + (n.ch ? ' ' + n.ch : ''); }); }
+function explainForge(a, b){
+  var sm = Huff.smallest(G.forest), good = Huff.sortedForest(G.forest).slice(0, 2), ok = {}; good.forEach(function(n){ ok[n.id] = 1; });
+  return { title: 'Era para juntar as duas runas mais leves', lines: [
+    'Você juntou ' + label(a) + ' e ' + label(b) + '.',
+    'Pesos na forja, do menor para o maior: ' + sortedWeights().join(' · ') + '. Os dois menores são ' + sm[0] + ' e ' + sm[1] + '.',
+    'Huffman é guloso: a cada passo junta as duas runas mais leves. As letras raras descem para o fundo (códigos longos) e as frequentes ficam perto da raiz (códigos curtos). Assim o total de bits fica o menor possível.'],
+    svgs: [{ label: 'Um par certo agora (verde)', svg: drawForest(Huff.sortedForest(G.forest), { ok: ok }) }] };
+}
+
+/* ---------- etapa 2: codificar ---------- */
+function curLetter(){ return G.w1[G.i]; }
+function nodeAt(bits){ var n = G.root; for (var i = 0; i < bits.length; i++) n = bits[i] === '0' ? n.left : n.right; return n; }
+function typeBit(b){
+  if (G.stage !== 1) return;
+  var ch = curLetter(), code = G.codes[ch], want = code[G.bit.length];
+  if (b !== want) return mistake(explainEncode(ch, G.bit + b));
+  G.bit += b;
+  if (G.bit === code) {
+    G.encoded.push(code); G.i++; G.bit = '';
+    feedback(ch + ' = ' + code, 'good');
+    if (G.i >= G.w1.length) { G.stage = 2; G.bits2 = Huff.encode(G.root, G.w2); feedback('Palavra codificada! Agora decifre a mensagem secreta.', 'good'); render(); stageIntro(); return; }
+  }
+  render();
+}
+function explainEncode(ch, typed){
+  var code = G.codes[ch], path = Huff.pathTo(G.root, ch), steps = [];
+  for (var i = 0; i < code.length; i++) { var from = path[i]; steps.push((code[i] === '0' ? 'esquerda (0)' : 'direita (1)') + ' rumo a ' + Huff.letters(path[i + 1]).join('')); }
+  return { title: 'O código de ' + ch + ' é ' + code, lines: [
+    'Você digitou ' + typed + ', mas o bit ' + (typed.length) + ' devia ser ' + code[typed.length - 1] + '.',
+    'Da raiz até a folha ' + ch + ': ' + steps.join(' · ') + '.',
+    'Cada passo à esquerda vale 0 e cada passo à direita vale 1. O código é o caminho.'],
+    svgs: [{ label: 'Caminho até ' + ch, svg: drawForest([G.root], { path: idset(path), ok: idset([path[path.length - 1]]) }) }] };
+}
+
+/* ---------- etapa 3: decifrar ---------- */
+function typeLetter(ch){
+  if (G.stage !== 2) return;
+  var r = Huff.decodeNext(G.root, G.bits2, G.pos);
+  if (ch !== r.ch) return mistake(explainDecode(ch, r));
+  G.decoded += ch; G.pos += r.len; feedback(G.bits2.substr(G.pos - r.len, r.len) + ' = ' + ch, 'good');
+  if (G.pos >= G.bits2.length) return finishRound();
+  render();
+}
+function explainDecode(ch, r){
+  var bits = G.bits2.substr(G.pos, r.len), steps = [];
+  for (var i = 0; i < bits.length; i++) steps.push(bits[i] + ' → ' + (bits[i] === '0' ? 'esquerda' : 'direita'));
+  return { title: 'Esses bits levam à letra ' + r.ch, lines: [
+    'Você escolheu ' + ch + '.',
+    'Lendo a partir do cursor: ' + steps.join(' · ') + '. Aí está a folha ' + r.ch + '.',
+    'Depois de uma folha, volte à raiz e leia os próximos bits.'],
+    svgs: [{ label: bits + ' = ' + r.ch, svg: drawForest([G.root], { path: idset(r.path), ok: idset([r.path[r.path.length - 1]]) }) }] };
+}
+
+/* ---------- erros, dicas ---------- */
+function mistake(exp){ G.errs++; var s = TM.penalty('err'); feedback(exp.title + '. Penalidade: +' + s + ' s.', 'bad'); render(); exp.note = (exp.note ? exp.note + ' ' : '') + 'O cronômetro fica parado enquanto esta janela está aberta; o erro soma **+' + s + ' s** ao seu tempo.'; Hints.modal(exp); }
+function feedback(t, cls){ var f = $('feedback'); f.textContent = t; f.className = 'feedback ' + (cls || ''); }
+function hintCtx(){ if (!G) return null; if (G.stage === 0) return 'f' + G.forest.length; if (G.stage === 1) return 'e' + G.i + ':' + G.bit; if (G.stage === 2) return 'd' + G.pos; return null; }
+function hint(){
+  var c = hintCtx(); if (!c) return;
+  if (G.hint.ctx !== c) G.hint = { ctx: c, level: 0 };
+  if (G.hint.level >= 2) { feedback('As duas camadas desta jogada já foram abertas.', ''); return; }
+  G.hint.level++; var cost = TM.penalty(G.hint.level === 1 ? 'h1' : 'h2'); G.hints++;
+  var lv = G.hint.level, txt;
+  if (G.stage === 0) {
+    var sm = Huff.smallest(G.forest), two = Huff.sortedForest(G.forest).slice(0, 2);
+    txt = lv === 1 ? 'Pesos na forja, do menor para o maior: ' + sortedWeights().join(' · ') + '. Quais são os dois primeiros?'
+                   : 'Junte ' + label(two[0]) + ' e ' + label(two[1]) + ': a runa nova terá peso ' + (sm[0] + sm[1]) + '.';
+  } else if (G.stage === 1) {
+    var ch = curLetter(), here = nodeAt(G.bit), want = G.codes[ch][G.bit.length];
+    txt = lv === 1 ? 'Letra ' + ch + (G.bit ? ', já com ' + G.bit : '') + '. Daqui, a esquerda leva às letras ' + Huff.letters(here.left).join(', ') + ' e a direita às letras ' + Huff.letters(here.right).join(', ') + '. De que lado está ' + ch + '?'
+                   : ch + ' está à ' + (want === '0' ? 'esquerda: o próximo bit é 0' : 'direita: o próximo bit é 1') + '. O código completo de ' + ch + ' é ' + G.codes[ch] + '.';
+  } else {
+    var r = Huff.decodeNext(G.root, G.bits2, G.pos), b = G.bits2.substr(G.pos, r.len);
+    txt = lv === 1 ? 'Volte à raiz. O próximo bit é ' + G.bits2[G.pos] + ', então desça para a ' + (G.bits2[G.pos] === '0' ? 'esquerda' : 'direita') + ' e continue lendo até chegar a uma folha.'
+                   : 'Os bits ' + b.split('').join(' ') + ' levam até a folha ' + r.ch + '.';
+  }
+  feedback('Dica ' + lv + ' de 2 (+' + cost + ' s): ' + txt, '');
+}
+
+/* ---------- fim da rodada ---------- */
+function finishRound(){
+  G.stage = 3;
+  G.res = TM.finish({ w1: G.w1, w2: G.w2, errs: G.errs, hints: G.hints });
+  feedback('Mensagem decifrada: ' + G.w2 + '! Média: ' + TM.fmtPer(G.res.v) + ' por letra' + (G.res.newBest ? ' (seu melhor tempo!)' : '') + '.', 'good');
+  render();
+}
+
+/* ---------- telas ---------- */
+function hud(){ TM.hud(); $('round').textContent = G.round; }
+function render(){
+  hud();
+  $('stages').innerHTML = STAGES.map(function(s, i){ return '<span class="stg ' + (i < G.stage ? 'done' : i === G.stage ? 'cur' : '') + '"><i>' + (i < G.stage ? '✓' : i + 1) + '</i>' + s + '</span>'; }).join('');
+  var f = Huff.freqs(G.text), mx = Math.max.apply(null, f.map(function(x){ return x.w; }));
+  $('freq').innerHTML = f.map(function(x){ return '<b>' + x.ch + '</b><i style="width:' + (100 * x.w / mx) + '%"></i><span>' + x.w + '</span>'; }).join('');
+  var w1 = G.w1.split('').map(function(c, i){ return '<span class="' + (G.stage === 1 && i === G.i ? 'cur' : (G.stage > 1 || (G.stage === 1 && i < G.i)) ? 'done' : '') + '">' + c + '</span>'; }).join('');
+  var w2 = G.stage < 3 ? G.w2.split('').map(function(c, i){ return '<span class="' + (i < G.decoded.length ? 'done' : 'hid') + '">' + (i < G.decoded.length ? c : '•') + '</span>'; }).join('') : G.w2.split('').map(function(c){ return '<span class="done">' + c + '</span>'; }).join('');
+  $('scroll').innerHTML = '<p style="margin:0;color:var(--muted);font-size:14px">1ª palavra: codificar</p><div class="word">' + w1 + '</div><p style="margin:8px 0 0;color:var(--muted);font-size:14px">2ª palavra: decifrar</p><div class="word">' + w2 + '</div>';
+
+  var acts = '', forge = $('forge'); $('outCard').hidden = false;
+  if (G.stage === 0) {
+    var pick = {}; G.forest.forEach(function(n){ pick[n.id] = 1; });
+    var sel = {}; if (G.sel) sel[G.sel.id] = 1; if (G.lastMerged) { }
+    forge.innerHTML = drawForest(Huff.sortedForest(G.forest), { pick: pick, sel: sel });
+    $('pTitle').textContent = 'Junte as duas runas mais leves';
+    $('pText').innerHTML = 'Clique em duas runas (os topos de cada árvore). Restam <b>' + G.forest.length + '</b>.' + (G.sel ? ' Selecionada: <b>' + esc(label(G.sel)) + '</b>.' : '');
+    $('outTitle').textContent = 'Como funciona'; $('out').innerHTML = '<p style="margin:0;font-size:15px;color:var(--muted)">Cada fusão cria um nó com o peso somado. A mais leve fica à esquerda (0) e a outra à direita (1).</p>';
+  } else if (G.stage === 1) {
+    var here = nodeAt(G.bit), pathN = [G.root]; var n = G.root; for (var i = 0; i < G.bit.length; i++) { n = G.bit[i] === '0' ? n.left : n.right; pathN.push(n); }
+    forge.innerHTML = drawForest([G.root], { path: idset(pathN) });
+    $('pTitle').textContent = 'Codifique a letra ' + curLetter();
+    $('pText').innerHTML = 'Desça da raiz até a folha <b>' + curLetter() + '</b>: esquerda = 0, direita = 1. Bits desta letra: <b style="font-family:monospace;font-size:20px;color:var(--torch)">' + (G.bit || '…') + '</b>';
+    acts = '<button class="btn bit" data-bit="0">0 <kbd>←</kbd></button><button class="btn bit" data-bit="1">1 <kbd>→</kbd></button>';
+    $('pText').innerHTML += '<div class="bits" style="margin-top:8px"><span style="font-family:var(--body);font-size:13px;color:var(--muted);display:block">Mensagem codificada</span>' + (G.encoded.map(function(c, i){ return '<span class="seg ok">' + c + '<small>' + G.w1[i] + '</small></span>'; }).join('') || '<span class="rest">ainda vazia</span>') + '</div>';
+    $('outCard').hidden = true;
+  } else if (G.stage === 2) {
+    forge.innerHTML = drawForest([G.root], { leafPick: true });
+    var done = '', p = 0, k = 0;
+    while (p < G.pos) { var r = Huff.decodeNext(G.root, G.bits2, p); done += '<span class="seg ok">' + G.bits2.substr(p, r.len) + '<small>' + r.ch + '</small></span>'; p += r.len; k++; }
+    var rest = G.bits2.slice(G.pos);
+    $('outCard').hidden = true;
+    $('pTitle').textContent = 'Decifre a próxima letra';
+    $('pText').innerHTML = 'Leia os bits a partir do cursor (em destaque), descendo da raiz, até chegar a uma folha. Depois digite a letra, clique na folha ou use os botões.' +
+      '<div class="bits" style="margin-top:8px"><span style="font-family:var(--body);font-size:13px;color:var(--muted);display:block">Mensagem secreta</span>' + done + '<span class="cursor">' + rest.charAt(0) + '</span><span class="rest">' + rest.slice(1) + '</span></div>';
+    acts = Huff.letters(G.root).sort().map(function(c){ return '<button class="btn letter" data-ch="' + c + '">' + c + '</button>'; }).join('');
+  } else {
+    forge.innerHTML = drawForest([G.root], {});
+    var c1 = Huff.encode(G.root, G.w1).length, c2 = G.bits2.length, k2 = Huff.letters(G.root).length, fb = Huff.fixedBits(k2);
+    function rows(word, huff){
+      var ascii = word.length * 8, fixed = word.length * fb;
+      return '<div class="cmp"><div class="row"><span>Huffman</span><div class="bar"><span style="width:' + (100 * huff / ascii) + '%;background:var(--moss)"></span></div><b>' + huff + ' bits</b></div>' +
+        '<div class="row"><span>Fixo (' + fb + ' bits/letra)</span><div class="bar"><span style="width:' + (100 * fixed / ascii) + '%;background:var(--torch)"></span></div><b>' + fixed + ' bits</b></div>' +
+        '<div class="row"><span>ASCII (8 bits/letra)</span><div class="bar"><span style="width:100%;background:var(--ember)"></span></div><b>' + ascii + ' bits</b></div></div>';
+    }
+    $('pTitle').textContent = 'Forja concluída!';
+    $('pText').innerHTML = '<div class="summary"><div><b style="font-family:var(--display);font-size:20px">' + G.w1 + '</b>' + rows(G.w1, c1) + '</div><div><b style="font-family:var(--display);font-size:20px">' + G.w2 + '</b>' + rows(G.w2, c2) + '</div></div>' +
+      '<p style="margin-top:10px">Economia total frente ao ASCII: <b style="color:var(--moss)">' + Math.round(100 - 100 * (c1 + c2) / ((G.w1.length + G.w2.length) * 8)) + '%</b>.</p>' + '<p style="margin:8px 0 0;font-size:18px">Tempo: <b>' + TM.fmt(G.res.ms) + '</b> no cronômetro + <b style="color:var(--ember)">' + Math.round(G.res.pen / 1000) + ' s</b> de penalidade (' + G.errs + (G.errs === 1 ? ' erro' : ' erros') + ', ' + G.hints + (G.hints === 1 ? ' dica' : ' dicas') + ') = <b>' + TM.fmt(G.res.total) + '</b> ÷ ' + G.res.n + ' letras = <b style="color:var(--gold);font-size:22px">' + TM.fmtPer(G.res.v) + ' por letra</b>' + (G.res.newBest ? ' <span style="color:var(--moss);font-weight:700">· seu melhor tempo!</span>' : '') + '</p>';
+    acts = '<button class="btn primary" data-act="next">Nova forja <kbd>Enter</kbd></button><button class="btn" data-act="rank">Ver ranking</button>';
+    var cs = G.codes || Huff.codes(G.root);
+    $('outTitle').textContent = 'Tabela de códigos';
+    $('out').innerHTML = '<div class="freq">' + Object.keys(cs).sort(function(a, b){ return cs[a].length - cs[b].length || (a < b ? -1 : 1); }).map(function(c){ return '<b>' + c + '</b><span style="font-family:monospace;font-size:17px;color:var(--torch)">' + cs[c] + '</span><span class="muted" style="color:var(--muted)">' + cs[c].length + ' bits</span>'; }).join('') + '</div>';
+  }
+  $('actions').innerHTML = acts;
+}
+
+/* ---------- eventos ---------- */
+$('forge').addEventListener('click', function(e){
+  var g = e.target.closest('[data-id]'); if (g && G.stage === 0) { forgePick(+g.dataset.id); return; }
+  var l = e.target.closest('[data-ch]'); if (l && G.stage === 2) typeLetter(l.dataset.ch);
+});
+$('forge').addEventListener('keydown', function(e){ if (e.key !== 'Enter' && e.key !== ' ') return; var g = e.target.closest('[data-id],[data-ch]'); if (!g) return; e.preventDefault(); e.stopPropagation(); if (g.dataset.id) forgePick(+g.dataset.id); else typeLetter(g.dataset.ch); });
+$('actions').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.bit) typeBit(b.dataset.bit); else if (b.dataset.ch) typeLetter(b.dataset.ch); else if (b.dataset.act === 'next') newRound(); else if (b.dataset.act === 'rank') TM.show();
+});
+document.addEventListener('keydown', function(e){
+  if (!G || TM.isOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('#forge [tabindex]')) return;
+  var k = e.key;
+  if (k === 'h' || k === 'H') { if (G.stage !== 2 || !/^[A-Z]$/i.test(k) || Huff.letters(G.root).indexOf('H') < 0) { hint(); return; } }
+  if (G.stage === 1) { if (k === '0' || k === 'ArrowLeft') { e.preventDefault(); typeBit('0'); } else if (k === '1' || k === 'ArrowRight') { e.preventDefault(); typeBit('1'); } }
+  else if (G.stage === 2 && /^[a-zA-Z]$/.test(k)) typeLetter(k.toUpperCase());
+  else if (G.stage === 3 && k === 'Enter') { e.preventDefault(); newRound(); }
+});
+$('hintBtn').addEventListener('click', hint);
+$('rankBtn').addEventListener('click', function(){ TM.show(); });
+$('helpBtn').addEventListener('click', function(){ var it = INTRO[['forjar', 'codificar', 'decifrar', 'decifrar'][G.stage]](); it.button = 'Voltar à forja'; Hints.modal(it); });
+
+Hints.modal({ tone:'info', kicker:'Masmorra · Huffman', title:'A Forja de Huffman', button:'Acender a forja',
+  intro:'Huffman comprime textos dando códigos curtos às letras frequentes e códigos longos às raras. Cada forja tem três etapas:', steps:[
+  '**Forjar a árvore** com as letras de duas palavras sorteadas, juntando sempre as duas runas mais leves.',
+  '**Texto → binário:** transformar a 1ª palavra em bits, seguindo o caminho até cada letra.',
+  '**Binário → texto:** decifrar a 2ª palavra, que chega só em bits.',
+  '**O cronômetro mede a forja inteira**, das três etapas.',
+  '**Corrida contra o relógio:** o cronômetro para enquanto uma janela de instrução ou de erro está aberta. Cada erro soma **+10 s** e cada dica (`H`) soma **+5 s** (1ª camada) ou **+15 s** (2ª). O **Ranking** usa a **média por letra** (tempo total ÷ letras da rodada), para palavras longas não atrapalharem. As 10 menores médias entram, com nome de até 3 caracteres.'],
+  onClose: function(){ G.seenIntro.forjar = 1; Hints.modal(INTRO.forjar()); } });
+G = { round: 0, seenIntro: { forjar: 1 } };
+newRound(true);
+window.__huff = { TM: TM, get G(){ return G; }, Huff: Huff, forgePick: forgePick, typeBit: typeBit, typeLetter: typeLetter, hint: hint };
+})();
+</script>
+</body>
+</html>

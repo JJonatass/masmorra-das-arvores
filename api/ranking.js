@@ -7,6 +7,14 @@
  *
  * GET  /api/ranking?id=<id>  -> { ok, top: [{pos, tag, queda, heroi, total, me}], players, me }
  * POST /api/ranking          -> body { id, tag, queda, heroi } ; guarda o melhor de cada jogo
+ *
+ * Quadros por jogo (?board=huffman|trie|splay|arena), um arquivo por jogador e nome:
+ *   b1/<quadro>/<id>/<NOME>/<a>_<b>_<c>_<d>_<e>.txt
+ *   tempo (huffman, trie, splay): a = valor ranqueado em ms (média por letra ou tempo total),
+ *                                 b = tempo total em ms, c = letras ou fregueses, d = erros, e = dicas
+ *   arena:                        a = acertos, b = tempo total de resposta em ms, c = perguntas, d = e = 0
+ * GET  /api/ranking?board=<q>&id=<id>&tag=<NOME> -> { ok, board, top: [...], players, me }
+ * POST /api/ranking  body { board, id, tag, ms, n, errs, hints } ou { board:'arena', id, tag, hits, ms, n }
  */
 'use strict';
 
@@ -15,7 +23,7 @@ const MAX_QUEDA = 2000000;   // tetos de plausibilidade
 const MAX_HEROI = 200000;
 
 function cleanTag(t) {
-  return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+  return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
 }
 function cleanId(id) { const s = String(id || ''); return /^[a-z0-9]{8,32}$/.test(s) ? s : null; }
 function cleanScore(v, max) { const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= 0 ? Math.min(n, max) : 0; }
@@ -24,13 +32,13 @@ function parse(pathname) {
   const m = /^r1\/([a-z0-9]{8,32})\/(\d+)_(\d+)_([A-Z0-9]{1,5})\.txt$/.exec(pathname);
   if (!m) return null;
   const queda = +m[2], heroi = +m[3];
-  return { id: m[1], queda, heroi, total: queda + heroi, tag: m[4] };
+  return { id: m[1], queda, heroi, total: queda + heroi, tag: m[4].slice(0, 3) };   // nomes antigos tinham até 5
 }
 
-async function listAll(store) {
+async function listAll(store, prefix) {
   const out = []; let cursor;
   for (let page = 0; page < 10; page++) {
-    const r = await store.list({ prefix: PREFIX, limit: 1000, cursor });
+    const r = await store.list({ prefix: prefix || PREFIX, limit: 1000, cursor });
     out.push(...r.blobs);
     if (!r.hasMore) break;
     cursor = r.cursor;
@@ -86,6 +94,77 @@ async function readBody(req) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch (e) { return {}; }
 }
 
+/* ---------------- quadros por jogo ---------------- */
+const BOARDS = {
+  huffman: { kind: 'time', per: true, minN: 14, maxN: 40 },
+  trie:    { kind: 'time', per: true, minN: 10, maxN: 120 },
+  splay:   { kind: 'time', per: false, minN: 11, maxN: 11 },
+  arena:   { kind: 'hits', minN: 15, maxN: 15 }
+};
+const MAX_MS = 2 * 3600 * 1000;
+function cleanInt(v, lo, hi) { const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= lo && n <= hi ? n : null; }
+function parseB(pathname) {
+  const m = /^b1\/([a-z]+)\/([a-z0-9]{8,32})\/([A-Z0-9]{1,3})\/(\d+)_(\d+)_(\d+)_(\d+)_(\d+)\.txt$/.exec(pathname);
+  if (!m || !BOARDS[m[1]]) return null;
+  return { board: m[1], id: m[2], tag: m[3], a: +m[4], ms: +m[5], n: +m[6], errs: +m[7], hints: +m[8] };
+}
+/* negativo: x vem antes de y */
+function cmpB(cfg, x, y) {
+  if (cfg.kind === 'hits') return y.a - x.a || x.ms - y.ms || x.at - y.at;
+  return x.a - y.a || x.ms - y.ms || x.at - y.at;
+}
+function rankB(cfg, blobs) {
+  const best = new Map();
+  for (const b of blobs) {
+    const p = parseB(b.pathname); if (!p) continue;
+    p.at = new Date(b.uploadedAt || 0).getTime();
+    const k = p.id + '/' + p.tag, cur = best.get(k);
+    if (!cur || cmpB(cfg, p, cur) < 0) best.set(k, p);
+  }
+  return [...best.values()].sort((x, y) => cmpB(cfg, x, y));
+}
+function rowB(cfg, p, i, meId, meTag) {
+  const r = { pos: i + 1, tag: p.tag, ms: p.ms, n: p.n, errs: p.errs, hints: p.hints, me: p.id === meId && (!meTag || p.tag === meTag) };
+  if (cfg.kind === 'hits') r.hits = p.a; else r.v = p.a;
+  return r;
+}
+async function getBoard(store, board, meId, meTag) {
+  const cfg = BOARDS[board];
+  const all = rankB(cfg, await listAll(store, 'b1/' + board + '/'));
+  const top = all.slice(0, 10).map((p, i) => rowB(cfg, p, i, meId, meTag));
+  let me = null;
+  if (meId) { const i = all.findIndex(p => p.id === meId && (!meTag || p.tag === meTag)); if (i >= 0) me = rowB(cfg, all[i], i, meId, meTag); }
+  return { ok: true, board, top, players: all.length, me };
+}
+async function submitB(store, board, body) {
+  const cfg = BOARDS[board];
+  const id = cleanId(body && body.id), tag = cleanTag(body && body.tag);
+  if (!id) return { status: 400, data: { ok: false, error: 'id inválido' } };
+  if (!tag) return { status: 400, data: { ok: false, error: 'nome vazio' } };
+  const n = cleanInt(body.n, cfg.minN, cfg.maxN), ms = cleanInt(body.ms, 1000, MAX_MS);
+  if (n === null || ms === null) return { status: 400, data: { ok: false, error: 'resultado inválido' } };
+  let rec;
+  if (cfg.kind === 'hits') {
+    const hits = cleanInt(body.hits, 0, n); if (hits === null) return { status: 400, data: { ok: false, error: 'resultado inválido' } };
+    rec = { a: hits, ms, n, errs: n - hits, hints: 0 };
+  } else {
+    const errs = cleanInt(body.errs, 0, 999) || 0, hints = cleanInt(body.hints, 0, 999) || 0;
+    rec = { a: cfg.per ? Math.round(ms / n) : ms, ms, n, errs, hints };
+  }
+  rec.at = Date.now();
+  const dir = 'b1/' + board + '/' + id + '/' + tag + '/';
+  const prev = (await store.list({ prefix: dir, limit: 100 })).blobs;
+  let best = rec;
+  for (const b of prev) { const p = parseB(b.pathname); if (p) { p.at = new Date(b.uploadedAt || 0).getTime(); if (cmpB(cfg, p, best) <= 0) best = p; } }
+  const name = `${dir}${best.a}_${best.ms}_${best.n}_${best.errs}_${best.hints}.txt`;
+  if (!prev.some(b => b.pathname === name)) await store.put(name, '1', { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'text/plain' });
+  const old = prev.filter(b => b.pathname !== name).map(b => b.url);
+  if (old.length) await store.del(old);
+  const data = await getBoard(store, board, id, tag);
+  data.improved = best === rec;
+  return { status: 200, data };
+}
+
 function makeHandler(store) {
   return async function handler(req, res) {
     cors(res);
@@ -94,12 +173,19 @@ function makeHandler(store) {
     res.setHeader('Cache-Control', 'no-store');
     try {
       if (req.method === 'GET') {
-        const url = new URL(req.url, 'http://x');
+        const url = new URL(req.url, 'http://x'), board = url.searchParams.get('board');
+        if (board && board !== 'geral') {
+          if (!BOARDS[board]) { res.statusCode = 400; return res.end(JSON.stringify({ ok: false, error: 'quadro desconhecido' })); }
+          const d = await getBoard(store, board, cleanId(url.searchParams.get('id')), cleanTag(url.searchParams.get('tag')) || null);
+          res.statusCode = 200; return res.end(JSON.stringify(d));
+        }
         const data = await getRanking(store, cleanId(url.searchParams.get('id')));
         res.statusCode = 200; return res.end(JSON.stringify(data));
       }
       if (req.method === 'POST') {
-        const r = await submit(store, await readBody(req));
+        const body = await readBody(req), board = body && body.board;
+        if (board && board !== 'geral' && !BOARDS[board]) { res.statusCode = 400; return res.end(JSON.stringify({ ok: false, error: 'quadro desconhecido' })); }
+        const r = board && board !== 'geral' ? await submitB(store, board, body) : await submit(store, body);
         res.statusCode = r.status; return res.end(JSON.stringify(r.data));
       }
       res.statusCode = 405; return res.end(JSON.stringify({ ok: false, error: 'método não permitido' }));
@@ -118,4 +204,4 @@ function realStore() {
 
 module.exports = (req, res) => makeHandler(realStore())(req, res);
 module.exports.makeHandler = makeHandler;
-module.exports._test = { parse, rank, cleanTag, getRanking, submit };
+module.exports._test = { parse, rank, cleanTag, getRanking, submit, parseB, rankB, getBoard, submitB, BOARDS };

@@ -69,8 +69,8 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     <div>
       <p class="era">Trilha de Estruturas · Era 03 · Árvores de busca</p>
       <h1>Masmorra das Árvores</h1>
-      <p style="margin:0 0 12px"><button id="rankBtn" style="background:#F2A93B;color:#1d1408;border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:17px;cursor:pointer">Ranking geral</button></p>
-      <p>Três jogos para praticar BST, AVL, rubro-negra, splay e percursos. Todos têm dica em camadas pela tecla <kbd>H</kbd>: a primeira diz o que olhar, a segunda mostra o raciocínio.</p>
+      <p style="margin:0 0 12px;display:flex;flex-wrap:wrap;gap:10px"><button id="rankBtn" style="background:#F2A93B;color:#1d1408;border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:17px;cursor:pointer">Ranking por pontos</button><button id="rankTimeBtn" style="background:#2E2C3D;color:#ECE3CF;border:1px solid #F2A93B;border-radius:10px;padding:10px 20px;font-weight:800;font-size:17px;cursor:pointer">Ranking por tempo</button></p>
+      <p>Seis jogos para praticar BST, AVL, rubro-negra, splay, percursos, trie e Huffman. Todos têm dica em camadas pela tecla <kbd>H</kbd>: a primeira diz o que olhar, a segunda mostra o raciocínio.</p>
     </div>
   </header>
 
@@ -126,20 +126,88 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
         <rect x="40" y="128" width="220" height="8" rx="4" fill="#2E2C3D"/><rect x="40" y="128" width="140" height="8" rx="4" fill="#F2A93B"/>
       </svg></div>
       <div class="body">
-        <span class="kind" style="color:var(--moss)">Quiz no telão · turma toda</span>
+        <span class="kind" style="color:var(--moss)">Quiz · individual ou turma toda</span>
         <h2>Arena das Árvores</h2>
-        <p>Perguntas sorteadas com a árvore desenhada, cronômetro, revelação com explicação, placar e pódio. Neste arquivo roda no modo equipes: as equipes respondem com cartões A, B, C e D.</p>
-        <div class="tags"><span class="tag">BST</span><span class="tag">Percursos</span><span class="tag">AVL</span><span class="tag">Rubro-negra</span><span class="tag">Splay</span></div>
-        <span class="keys"><kbd>H</kbd> mostra a dica no telão para todos</span>
+        <p>Desafio individual de 15 perguntas, com ranking por acertos e desempate pelo tempo total. Em sala, o modo equipes vai para o telão e as equipes respondem com cartões A, B, C e D.</p>
+        <div class="tags"><span class="tag">BST</span><span class="tag">Percursos</span><span class="tag">AVL</span><span class="tag">Rubro-negra</span><span class="tag">Splay</span><span class="tag">ranking por acertos</span></div>
+        <span class="keys"><kbd>1</kbd>–<kbd>4</kbd> responder no desafio · <kbd>H</kbd> dica no telão</span>
         <button class="play" data-game="arena">Jogar</button>
+      </div>
+    </article>
+
+    <article class="game">
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 150">
+        <line x1="150" y1="34" x2="100" y2="74" stroke="#7CC39A" stroke-width="3"/><line x1="150" y1="34" x2="200" y2="74" stroke="#5B5674" stroke-width="3"/>
+        <line x1="100" y1="74" x2="70" y2="114" stroke="#7CC39A" stroke-width="3"/><line x1="100" y1="74" x2="130" y2="114" stroke="#5B5674" stroke-width="3"/>
+        <circle cx="150" cy="34" r="15" fill="#23222F" stroke="#F2A93B" stroke-width="3"/><text x="150" y="35" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="13" text-anchor="middle" dominant-baseline="central">9</text>
+        <circle cx="100" cy="74" r="14" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="100" y="75" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="13" text-anchor="middle" dominant-baseline="central">4</text>
+        <rect x="184" y="60" width="32" height="28" rx="6" fill="#3A3122" stroke="#F2C14E" stroke-width="2"/><text x="200" y="74" fill="#F2C14E" font-family="IM Fell English SC, Georgia, serif" font-size="18" text-anchor="middle" dominant-baseline="central">A</text>
+        <rect x="54" y="100" width="32" height="28" rx="6" fill="#3A3122" stroke="#7CC39A" stroke-width="3"/><text x="70" y="114" fill="#F2C14E" font-family="IM Fell English SC, Georgia, serif" font-size="18" text-anchor="middle" dominant-baseline="central">R</text>
+        <rect x="114" y="100" width="32" height="28" rx="6" fill="#3A3122" stroke="#F2C14E" stroke-width="2"/><text x="130" y="114" fill="#F2C14E" font-family="IM Fell English SC, Georgia, serif" font-size="18" text-anchor="middle" dominant-baseline="central">O</text>
+        <text x="122" y="52" fill="#7CC39A" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="13">0</text><text x="172" y="52" fill="#A9A1B8" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="13">1</text><text x="78" y="92" fill="#7CC39A" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="13">0</text>
+        <text x="250" y="120" fill="#7CC39A" font-family="ui-monospace, monospace" font-weight="700" font-size="16" text-anchor="middle">00 01 1</text>
+      </svg></div>
+      <div class="body">
+        <span class="kind" style="color:var(--gold, #F2C14E)">Contra o relógio · individual</span>
+        <h2>A Forja de Huffman</h2>
+        <p>Forje a árvore de Huffman com as letras de duas palavras sorteadas, transforme a primeira em bits e decifre a segunda, que chega só em binário.</p>
+        <div class="tags"><span class="tag">Huffman</span><span class="tag">Compressão</span><span class="tag">ranking por letra</span></div>
+        <span class="keys"><kbd>0</kbd> <kbd>1</kbd> bits · letras para decifrar · <kbd>H</kbd> dica</span>
+        <button class="play" data-game="huffman">Jogar</button>
+      </div>
+    </article>
+
+    <article class="game">
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 150">
+        <g stroke="#5B5674" stroke-width="3"><line x1="40" y1="75" x2="90" y2="45"/><line x1="40" y1="75" x2="90" y2="105"/><line x1="90" y1="45" x2="140" y2="45"/><line x1="140" y1="45" x2="190" y2="25"/><line x1="140" y1="45" x2="190" y2="65"/><line x1="90" y1="105" x2="140" y2="105"/><line x1="190" y1="25" x2="240" y2="25"/></g>
+        <g stroke="#F2A93B" stroke-width="4"><line x1="40" y1="75" x2="90" y2="45"/><line x1="90" y1="45" x2="140" y2="45"/><line x1="140" y1="45" x2="190" y2="65"/></g>
+        <circle cx="40" cy="75" r="13" fill="#23222F" stroke="#F2A93B" stroke-width="3"/><circle cx="40" cy="75" r="3" fill="#ECE3CF"/>
+        <circle cx="90" cy="45" r="14" fill="#23222F" stroke="#F2A93B" stroke-width="3"/><text x="90" y="46" fill="#ECE3CF" font-family="IM Fell English SC, Georgia, serif" font-size="16" text-anchor="middle" dominant-baseline="central">M</text>
+        <circle cx="140" cy="45" r="14" fill="#23222F" stroke="#F2A93B" stroke-width="3"/><text x="140" y="46" fill="#ECE3CF" font-family="IM Fell English SC, Georgia, serif" font-size="16" text-anchor="middle" dominant-baseline="central">A</text>
+        <circle cx="190" cy="25" r="14" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="190" y="26" fill="#ECE3CF" font-family="IM Fell English SC, Georgia, serif" font-size="16" text-anchor="middle" dominant-baseline="central">R</text>
+        <circle cx="190" cy="65" r="14" fill="#3A3122" stroke="#F2C14E" stroke-width="3"/><circle cx="190" cy="65" r="18" fill="none" stroke="#F2C14E" stroke-width="2"/><text x="190" y="66" fill="#F2C14E" font-family="IM Fell English SC, Georgia, serif" font-size="16" text-anchor="middle" dominant-baseline="central">L</text>
+        <circle cx="240" cy="25" r="14" fill="#3A3122" stroke="#F2C14E" stroke-width="3"/><circle cx="240" cy="25" r="18" fill="none" stroke="#F2C14E" stroke-width="2"/><text x="240" y="26" fill="#F2C14E" font-family="IM Fell English SC, Georgia, serif" font-size="16" text-anchor="middle" dominant-baseline="central">E</text>
+        <circle cx="90" cy="105" r="14" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="90" y="106" fill="#ECE3CF" font-family="IM Fell English SC, Georgia, serif" font-size="16" text-anchor="middle" dominant-baseline="central">S</text>
+        <circle cx="140" cy="105" r="14" fill="#3A3122" stroke="#F2C14E" stroke-width="3"/><circle cx="140" cy="105" r="18" fill="none" stroke="#F2C14E" stroke-width="2"/><text x="140" y="106" fill="#F2C14E" font-family="IM Fell English SC, Georgia, serif" font-size="16" text-anchor="middle" dominant-baseline="central">O</text>
+      </svg></div>
+      <div class="body">
+        <span class="kind" style="color:var(--mana)">Contra o relógio · individual</span>
+        <h2>A Biblioteca dos Ecos</h2>
+        <p>Guarde palavras numa trie reaproveitando os prefixos, diga se uma consulta é palavra, só prefixo ou não existe, e faça o autocompletar de um prefixo.</p>
+        <div class="tags"><span class="tag">Trie</span><span class="tag">Prefixos</span><span class="tag">Autocompletar</span><span class="tag">ranking por letra</span></div>
+        <span class="keys"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> escolher · <kbd>Enter</kbd> conferir · <kbd>H</kbd> dica</span>
+        <button class="play" data-game="trie">Jogar</button>
+      </div>
+    </article>
+
+    <article class="game">
+      <div class="art" aria-hidden="true"><svg viewBox="0 0 300 150">
+        <line x1="110" y1="30" x2="70" y2="70" stroke="#5B5674" stroke-width="3"/><line x1="110" y1="30" x2="150" y2="70" stroke="#5B5674" stroke-width="3"/><line x1="150" y1="70" x2="125" y2="110" stroke="#5B5674" stroke-width="3"/><line x1="150" y1="70" x2="175" y2="110" stroke="#5B5674" stroke-width="3"/>
+        <rect x="90" y="16" width="40" height="28" rx="6" fill="#23222F" stroke="#7CC39A" stroke-width="3"/><text x="110" y="30" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">41</text>
+        <rect x="50" y="56" width="40" height="28" rx="6" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="70" y="70" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">17</text>
+        <rect x="130" y="56" width="40" height="28" rx="6" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="150" y="70" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">60</text>
+        <rect x="105" y="96" width="40" height="28" rx="6" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="125" y="110" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">51</text>
+        <rect x="155" y="96" width="40" height="28" rx="6" fill="#23222F" stroke="#45425A" stroke-width="2"/><text x="175" y="110" fill="#ECE3CF" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="15" text-anchor="middle" dominant-baseline="central">72</text>
+        <path d="M60 112 Q40 70 82 34" fill="none" stroke="#B46BE0" stroke-width="3" stroke-dasharray="6 5"/><path d="M82 34 l-12 2 l7 9 z" fill="#B46BE0"/>
+        <rect x="215" y="40" width="70" height="10" rx="5" fill="#2E2C3D"/><rect x="215" y="40" width="34" height="10" rx="5" fill="#7CC39A"/>
+        <rect x="215" y="62" width="70" height="10" rx="5" fill="#2E2C3D"/><rect x="215" y="62" width="62" height="10" rx="5" fill="#E5604A"/>
+        <text x="250" y="96" fill="#7CC39A" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="14" text-anchor="middle">economia</text>
+      </svg></div>
+      <div class="body">
+        <span class="kind" style="color:var(--curse)">Contra o relógio · individual</span>
+        <h2>O Mercado da Torre</h2>
+        <p>Atenda a fila de fregueses: desça até o item pedido e suba-o ao topo com zig, zig-zig e zig-zag. No fim do dia, compare o custo com uma torre que nunca gira.</p>
+        <div class="tags"><span class="tag">Splay</span><span class="tag">Custo amortizado</span><span class="tag">ranking por tempo</span></div>
+        <span class="keys"><kbd>←</kbd> <kbd>→</kbd> buscar · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> girar · <kbd>H</kbd> dica</span>
+        <button class="play" data-game="splay">Jogar</button>
       </div>
     </article>
   </section>
 
   <section class="tips" aria-label="Sugestões de uso">
-    <div class="tip"><b>Ordem sugerida.</b> Comece pela Queda das Chaves no modo treino, siga com o Herói da Cripta e feche a aula com a Arena em equipes.</div>
+    <div class="tip"><b>Ordem sugerida.</b> Comece pela Queda das Chaves no modo treino, siga com o Herói da Cripta e feche a aula com a Arena em equipes. Forja, Biblioteca e Mercado servem para trie, Huffman e splay.</div>
     <div class="tip"><b>Em sala.</b> Use o botão Tela cheia no projetor. A Arena aceita 2 a 4 equipes, e você escolhe os assuntos e o tempo.</div>
-    <div class="tip"><b>Progresso.</b> Recordes, estrelas e capítulos ficam salvos neste navegador. Em computador compartilhado, cada aluno começa do zero.</div>
+    <div class="tip"><b>Rankings.</b> Por pontos: o geral (Queda + Herói) e a Arena (acertos, desempate pelo tempo). Por tempo: Forja, Biblioteca e Mercado. Todos online, com nome de 3 caracteres.</div>
   </section>
 </main>
 
@@ -148,7 +216,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     <button id="back">← Menu</button>
     <h2 id="gameTitle"></h2>
     <div class="sw" role="group" aria-label="Trocar de jogo">
-      <button data-switch="queda">Queda</button><button data-switch="heroi">Herói</button><button data-switch="arena">Arena</button>
+      <button data-switch="queda">Queda</button><button data-switch="heroi">Herói</button><button data-switch="arena">Arena</button><button data-switch="huffman">Huffman</button><button data-switch="trie">Trie</button><button data-switch="splay">Mercado</button>
     </div>
     <button class="fs" id="fsBtn">Tela cheia</button>
   </div>
@@ -165,7 +233,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
   var st = document.createElement('style'); st.textContent = FONTCSS; document.head.appendChild(st);
   /* Firefox e Safari recusam mudar o endereço de um arquivo local: o menu segue funcionando sem isso. */
   function setURL(h){ try { var cur = location.hash; if ((h || '') === (cur || '')) return; history.pushState(null, '', h || location.pathname); } catch (e) {} }
-  var NAMES = { queda:'A Queda das Chaves', heroi:'O Herói da Cripta', arena:'Arena das Árvores' };
+  var NAMES = { queda:'A Queda das Chaves', heroi:'O Herói da Cripta', arena:'Arena das Árvores', huffman:'A Forja de Huffman', trie:'A Biblioteca dos Ecos', splay:'O Mercado da Torre' };
   var current = null;
   function open(id, push){
     if (!GAMES[id]) return showMenu(push);
@@ -190,7 +258,8 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     var s = e.target.closest('[data-switch]'); if (s) { open(s.dataset.switch); }
   });
   $('back').addEventListener('click', function(){ showMenu(); });
-  $('rankBtn').addEventListener('click', function(){ Ranking.show(); });
+  $('rankBtn').addEventListener('click', function(){ Placar.showGroup('pontos'); });
+  $('rankTimeBtn').addEventListener('click', function(){ Placar.showGroup('tempo'); });
   $('fsBtn').addEventListener('click', function(){
     var el = $('player');
     try { if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(function(){}); } catch (e) {}

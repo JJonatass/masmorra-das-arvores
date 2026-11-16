@@ -9,7 +9,7 @@ var Ranking = (function(){
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
   function fmt(n){ return (+n || 0).toLocaleString('pt-BR'); }
   function newId(){ var s = ''; for (var i = 0; i < 20; i++) s += 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]; return s; }
-  function cleanTag(t){ return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); }
+  function cleanTag(t){ return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3); }
 
   /* ---------- jogador local ---------- */
   var mem = null;
@@ -17,6 +17,7 @@ var Ranking = (function(){
     try { var raw = localStorage.getItem(KEY); if (raw) { var d = JSON.parse(raw); if (!mem) mem = d; else { for (var k in mem) delete mem[k]; for (var j in d) mem[j] = d[j]; } } } catch (e) {}
     if (!mem || !mem.id) mem = { id: newId(), tag: '', queda: 0, heroi: {}, pending: false };
     if (!mem.heroi) mem.heroi = {};
+    if (mem.tag && mem.tag.length > 3) { mem.tag = cleanTag(mem.tag); mem.pending = true; }   // nomes antigos de 5 caracteres
     save(); return mem;
   }
   function save(){ try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) {} }
@@ -92,12 +93,12 @@ var Ranking = (function(){
   function askName(onDone){
     var p = player(), t = totals();
     open(head('Você entrou no top 10!', 'Deixe seu nome na masmorra') +
-      '<p style="margin:0 0 12px;font-size:17px">Queda <b>' + fmt(t.queda) + '</b> + Herói <b>' + fmt(t.heroi) + '</b> = <b style="color:#F2A93B">' + fmt(t.total) + '</b> pontos. Escolha um nome de até <b>5 caracteres</b> (letras e números).</p>' +
-      '<form id="rk-form" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><input id="rk-tag" maxlength="5" autocomplete="off" spellcheck="false" aria-label="Nome com até 5 caracteres" value="' + esc(p.tag) + '" style="width:9.5ch;font-size:34px;font-weight:800;letter-spacing:.25em;text-transform:uppercase;text-align:center;background:#121119;color:#F2C14E;border:2px solid #F2C14E;border-radius:10px;padding:6px 8px;font-family:\'IM Fell English SC\',Georgia,serif">' +
+      '<p style="margin:0 0 12px;font-size:17px">Queda <b>' + fmt(t.queda) + '</b> + Herói <b>' + fmt(t.heroi) + '</b> = <b style="color:#F2A93B">' + fmt(t.total) + '</b> pontos. Escolha um nome de até <b>3 caracteres</b> (letras e números).</p>' +
+      '<form id="rk-form" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><input id="rk-tag" maxlength="3" autocomplete="off" spellcheck="false" aria-label="Nome com até 3 caracteres" value="' + esc(p.tag) + '" style="width:6.5ch;font-size:34px;font-weight:800;letter-spacing:.25em;text-transform:uppercase;text-align:center;background:#121119;color:#F2C14E;border:2px solid #F2C14E;border-radius:10px;padding:6px 8px;font-family:\'IM Fell English SC\',Georgia,serif">' +
       '<span id="rk-count" style="color:#A9A1B8;font-size:14px"></span><p id="rk-err" style="flex-basis:100%;margin:0;color:#FFB3A6;font-size:14px;min-height:1.2em"></p>' +
       btns([second('Agora não', 'data-rk="close"'), '<button type="submit" style="' + BTN + ';background:#F2A93B;color:#1d1408">Salvar no ranking</button>']) + '</form>', onDone);
     var inp = box.querySelector('#rk-tag'), cnt = box.querySelector('#rk-count'), err = box.querySelector('#rk-err');
-    function upd(){ var v = cleanTag(inp.value); if (v !== inp.value) inp.value = v; cnt.textContent = v.length + '/5'; err.textContent = ''; }
+    function upd(){ var v = cleanTag(inp.value); if (v !== inp.value) inp.value = v; cnt.textContent = v.length + '/3'; err.textContent = ''; }
     inp.addEventListener('input', upd); upd(); setTimeout(function(){ try { inp.focus(); inp.select(); } catch (e) {} }, 40);
     box.querySelector('#rk-form').addEventListener('submit', function(e){
       e.preventDefault();

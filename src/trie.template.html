@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Biblioteca dos Ecos</title>
+<style>
+:root{
+  --bg:#16151F; --stone:#23222F; --stone-2:#2E2C3D; --line:#45425A;
+  --ink:#ECE3CF; --muted:#A9A1B8; --torch:#F2A93B; --ember:#E5604A; --moss:#7CC39A; --gold:#F2C14E; --sky:#8FB8F0;
+  --display:'IM Fell English SC', Georgia, serif;
+  --body:'Alegreya Sans', 'Trebuchet MS', Verdana, sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;
+  background-image:radial-gradient(1200px 500px at 30% -10%, #1d2a3a 0%, transparent 60%);background-attachment:fixed}
+button{font-family:var(--body);font-size:16px;cursor:pointer;color:inherit}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1320px;margin:0 auto;padding:14px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.brand{flex:1;min-width:220px}
+.brand small{display:block;color:var(--sky);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.brand h1{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1.05}
+.stat{display:flex;flex-direction:column;align-items:flex-end}
+.stat span{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.stat b{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat b.gold{color:var(--gold)}
+.hbtn{background:var(--stone-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px}
+.hbtn:hover{border-color:var(--torch)}
+kbd{font-family:var(--body);font-size:12px;font-weight:700;border:1px solid currentColor;border-radius:5px;padding:0 5px;opacity:.85}
+.stages{display:flex;flex-wrap:wrap;gap:8px}
+.stg{display:flex;align-items:center;gap:8px;background:var(--stone);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 6px;font-size:15px;color:var(--muted)}
+.stg i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--stone-2);font-weight:800;font-size:13px}
+.stg.cur{border-color:var(--torch);color:var(--ink)} .stg.cur i{background:var(--torch);color:#1d1408}
+.stg.done{color:var(--moss)} .stg.done i{background:var(--moss);color:#14301f}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+.lib{background:#100F17;border:1px solid var(--line);border-radius:14px;min-height:340px;padding:10px;display:flex;align-items:center;justify-content:center;overflow:auto}
+.lib svg{display:block;max-width:100%;height:auto}
+.tn.pick{cursor:pointer}
+.tn.pick:hover circle{stroke:var(--torch)}
+.prompt{background:var(--stone);border:1px solid var(--line);border-left:5px solid var(--torch);border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.prompt h2{font-family:var(--display);font-weight:400;font-size:25px;margin:0;line-height:1.15}
+.prompt p{margin:0}
+.feedback{min-height:1.45em;font-weight:500}
+.feedback.good{color:#B7F0CC} .feedback.bad{color:#FFB3A6}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--stone-2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-weight:700;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left}
+.btn small{font-weight:500;color:var(--muted);font-size:13px}
+.btn:hover:not(:disabled){border-color:var(--torch)}
+.btn.primary{background:var(--torch);color:#1d1408;border-color:var(--torch)}
+.btn.primary small{color:#5a3d10}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--stone);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 8px}
+.word{font-family:var(--display);font-size:34px;letter-spacing:.14em;display:flex;flex-wrap:wrap}
+.word span{padding:0 2px;border-bottom:3px solid transparent}
+.word span.cur{color:var(--torch);border-color:var(--torch)}
+.word span.done{color:var(--moss)}
+.word span.end{color:var(--gold);border-color:var(--gold)}
+.queue{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-family:var(--display);font-size:19px;letter-spacing:.06em}
+.queue li{color:var(--muted)} .queue li.cur{color:var(--torch)} .queue li.done{color:var(--moss)}
+.counter{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:15px}
+.counter b{font-variant-numeric:tabular-nums;text-align:right}
+.counter .save{color:var(--moss);font-weight:800}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid #8C87A6;display:inline-block;background:#23222F}
+.dot.end{background:#5a4613;border-color:var(--gold)}
+.dot.cur{border-color:var(--torch);border-width:3px}
+.stat b.time{font-variant-numeric:tabular-nums;min-width:5.2ch;display:inline-block}
+.stat b.pen{color:var(--ember)}
+@media (max-width:980px){ .main{grid-template-columns:1fr} }
+@media (max-width:600px){ .brand h1{font-size:24px} .word{font-size:28px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><small>Masmorra · Trie</small><h1>A Biblioteca dos Ecos</h1></div>
+    <div class="stat"><span>Tempo</span><b id="time" class="gold time">0:00,0</b></div>
+    <div class="stat"><span>Penalidade</span><b id="pen" class="pen">+0 s</b></div>
+    <div class="stat"><span>Melhor por letra</span><b id="best" class="time">–</b></div>
+    <div class="stat"><span>Estante</span><b id="round">1</b></div>
+    <button class="hbtn" id="rankBtn">Ranking</button>
+    <button class="hbtn" id="helpBtn">Como jogar</button>
+    <button class="hbtn" id="hintBtn">Dica <kbd>H</kbd></button>
+  </header>
+  <div class="stages" id="stages"></div>
+  <div class="main">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="lib" id="lib" aria-live="polite"></div>
+      <div class="prompt">
+        <h2 id="pTitle"></h2>
+        <div id="pText"></div>
+        <p class="feedback" id="feedback"></p>
+        <div class="actions" id="actions"></div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="card"><h3 id="sideTitle">Pergaminhos</h3><div id="side"></div></div>
+      <div class="card"><h3>Contas da biblioteca</h3><div class="counter" id="counter"></div></div>
+      <div class="card legend"><span><i class="dot"></i>sala (uma letra)</span><span><i class="dot end"></i>fim de palavra</span><span><i class="dot cur"></i>onde você está</span></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+var T = TrieG;
+var TM = Tempo.create({ board: 'trie', per: true, focusAfter: 'rankBtn', count: function(x){ return (x.words || []).join('').length; } });
+
+/* ---------- desenho: trie deitada, da esquerda para a direita ---------- */
+var DX = 52, DY = 38, X0 = 26, Y0 = 26;
+function drawTrie(root, o){
+  o = o || {};
+  var pos = {}, li = 0, maxD = 0;
+  (function w(n, d){
+    var ks = Object.keys(n.kids).sort();
+    if (d > maxD) maxD = d;
+    if (!ks.length) { pos[n.id] = { x: X0 + d * DX, y: Y0 + li * DY }; li++; return; }
+    ks.forEach(function(k){ w(n.kids[k], d + 1); });
+    var ys = ks.map(function(k){ return pos[n.kids[k].id].y; });
+    pos[n.id] = { x: X0 + d * DX, y: (ys[0] + ys[ys.length - 1]) / 2 };
+  })(root, 0);
+  var W = X0 * 2 + Math.max(maxD, 6) * DX, H = Y0 * 2 + Math.max(li - 1, 0) * DY + 6;
+  var path = o.path || {}, sel = o.sel || {}, okm = o.ok || {}, bad = o.bad || {}, cur = o.cur, s = '';
+  T.nodes(root).forEach(function(n){ if (n.parent) { var a = pos[n.parent.id], b = pos[n.id], hot = path[n.id] && path[n.parent.id];
+    s += '<line x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '" stroke="' + (hot ? '#F2A93B' : '#5B5674') + '" stroke-width="' + (hot ? 4 : 2.5) + '"/>'; } });
+  T.nodes(root).forEach(function(n){
+    var p = pos[n.id], fill = n.end ? '#5a4613' : '#23222F', stroke = n.end ? '#F2C14E' : '#8C87A6', sw = 2;
+    if (path[n.id]) { stroke = '#F2A93B'; sw = 3; }
+    if (okm[n.id]) { stroke = '#7CC39A'; sw = 4; }
+    if (bad[n.id]) { stroke = '#E5604A'; sw = 4; }
+    if (sel[n.id]) { fill = '#2d5a40'; stroke = '#7CC39A'; sw = 4; }
+    if (cur === n.id) { stroke = '#F2A93B'; sw = 5; }
+    var pick = o.pick && n.parent ? ' class="tn pick" data-id="' + n.id + '" tabindex="0" role="button" aria-label="Sala ' + esc(T.prefixOf(n)) + '"' : ' class="tn"';
+    s += '<g' + pick + '><circle cx="' + p.x + '" cy="' + p.y + '" r="15" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + sw + '"/>' +
+      (n.end ? '<circle cx="' + p.x + '" cy="' + p.y + '" r="19" fill="none" stroke="#F2C14E" stroke-width="1.5" opacity=".8"/>' : '') +
+      '<text x="' + p.x + '" y="' + (p.y + 1) + '" fill="#ECE3CF" font-size="' + (n.parent ? 16 : 13) + '" font-weight="800" text-anchor="middle" dominant-baseline="central" style="font-family:\'IM Fell English SC\',Georgia,serif">' + (n.parent ? n.ch : '•') + '</text></g>';
+  });
+  if (o.ghost) { var g = pos[o.ghost.parent], gx = g.x + DX, gy = g.y + DY * 0.6;
+    s += '<line x1="' + g.x + '" y1="' + g.y + '" x2="' + (gx - 15) + '" y2="' + gy + '" stroke="#F2A93B" stroke-width="2" stroke-dasharray="4 4"/><circle cx="' + gx + '" cy="' + gy + '" r="15" fill="rgba(242,169,59,.12)" stroke="#F2A93B" stroke-width="2" stroke-dasharray="5 4"/><text x="' + gx + '" y="' + (gy + 1) + '" fill="#F2A93B" font-size="16" font-weight="800" text-anchor="middle" dominant-baseline="central" style="font-family:\'IM Fell English SC\',Georgia,serif">' + o.ghost.ch + '</text>'; }
+  return '<svg viewBox="0 0 ' + (W + (o.ghost ? DX : 0)) + ' ' + Math.max(H, 80) + '" width="' + (W + (o.ghost ? DX : 0)) + '" role="img" aria-label="Trie da biblioteca" style="font-family:\'Alegreya Sans\',sans-serif">' + s + '</svg>';
+}
+function pathSet(n){ var m = {}; while (n) { m[n.id] = 1; n = n.parent; } return m; }
+function walkPath(root, s){ var m = {}, n = root, last = root; m[n.id] = 1; for (var i = 0; i < s.length; i++) { n = n.kids[s[i]]; if (!n) break; m[n.id] = 1; last = n; } return { set: m, last: last, broke: !n, at: i }; }
+
+/* ---------- estado ---------- */
+var STAGES = ['Guardar palavras', 'Consultar o catálogo', 'Oráculo do autocompletar'];
+var G = { round: 0, seenIntro: {} };
+function newRound(){
+  var r = T.round();
+  G.round++; G.root = T.newTrie(); G.words = r.words; G.fam = r.families; G.wi = 0; G.li = 0; G.node = G.root; G.stage = 0;
+  G.typed = 0; G.created = 0; G.errs = 0; G.hints = 0; G.res = null; TM.start(); G.hint = { ctx: null, level: 0 }; G.qs = null; G.qi = 0; G.orc = null; G.picked = {};
+  render(); stageIntro();
+}
+function stageIntro(){ var k = ['guardar', 'consultar', 'oraculo'][G.stage]; if (G.round > 1 || G.seenIntro[k]) return; G.seenIntro[k] = 1; Hints.modal(INTRO[k]()); }
+var INTRO = {
+  guardar: function(){ return { tone:'info', kicker:'Etapa 1 de 3 · Como jogar', title:'Guardar palavras', button:'Abrir a biblioteca',
+    intro:'A biblioteca guarda palavras numa trie: cada sala é uma letra, e uma palavra é o caminho da raiz (•) até uma sala marcada como fim.', steps:[
+    'A palavra da vez aparece no pergaminho, com a **próxima letra** em destaque. Você começa na raiz (•).',
+    'Se já existe uma sala com essa letra saindo de onde você está, escolha **Seguir** (`1`): reaproveite a sala.',
+    'Se não existe, escolha **Cavar** (`2`): uma sala nova é criada.',
+    'Quando as letras acabarem, escolha **Marcar fim** (`3`): a sala ganha o anel dourado e a palavra passa a existir.',
+    'Atenção: uma palavra pode terminar no meio de outra (CASA dentro de CASAMENTO). Aí todas as salas já existem, mas ainda falta marcar o fim.',
+    'O quadro **Contas da biblioteca** mostra quantas salas os prefixos em comum economizaram.'] }; },
+  consultar: function(){ return { tone:'info', kicker:'Etapa 2 de 3 · Como jogar', title:'Consultar o catálogo', button:'Consultar',
+    intro:'Visitantes perguntam se uma palavra está na biblioteca. Siga as letras na trie e responda.', steps:[
+    'Comece na raiz (•) e siga as salas letra por letra.',
+    'Se o caminho **quebra** (falta uma sala), a palavra **não existe** (`3`).',
+    'Se o caminho vai até o fim e a última sala tem o **anel dourado**, é **palavra** (`1`).',
+    'Se o caminho existe mas a última sala **não tem** o anel, é **só prefixo** de outras palavras (`2`).'] }; },
+  oraculo: function(){ return { tone:'info', kicker:'Etapa 3 de 3 · Como jogar', title:'Oráculo do autocompletar', button:'Consultar o oráculo',
+    intro:'O oráculo recebe o começo de uma palavra e precisa sugerir todas as palavras que começam assim, como o autocompletar do celular.', steps:[
+    'Ache a sala do **prefixo** pedido: siga as letras a partir da raiz.',
+    'Todas as palavras que começam com esse prefixo estão **à direita dessa sala**, no galho que sai dela.',
+    'Clique em cada sala com **anel dourado** desse galho. Clicar de novo desmarca.',
+    'Quando terminar, clique **Pronto** (`Enter`). Cada palavra esquecida ou marcada a mais conta como um erro (**+10 s**).'] }; }
+};
+
+/* ---------- etapa 1: guardar ---------- */
+var ACT_NAME = { seguir:'Seguir', cavar:'Cavar', fim:'Marcar fim' };
+function curWord(){ return G.words[G.wi]; }
+function doAction(a){
+  if (G.stage !== 0) return;
+  var w = curWord(), want = T.action(G.node, w, G.li);
+  if (a !== want) return mistake(explainBuild(a, want));
+  if (a === 'fim') {
+    G.node.end = true; feedback('"' + w + '" guardada!', 'good');
+    G.wi++; G.li = 0; G.node = G.root;
+    if (G.wi >= G.words.length) { G.stage = 1; G.qs = T.queries(G.root, G.words, G.fam); G.qi = 0; feedback('Estante completa! Agora atenda as consultas.', 'good'); render(); stageIntro(); return; }
+  } else {
+    G.typed++; if (a === 'cavar') { G.created++; }
+    G.node = a === 'cavar' ? T.dig(G.node, w[G.li]) : G.node.kids[w[G.li]]; G.li++;
+    feedback(a === 'cavar' ? 'Sala ' + w[G.li - 1] + ' criada.' : 'Reaproveitou a sala ' + w[G.li - 1] + '.', 'good');
+  }
+  render();
+}
+function explainBuild(a, want){
+  var w = curWord(), here = T.prefixOf(G.node) || 'a raiz', c = w[G.li], lines = [], o;
+  if (want === 'fim') lines.push('As letras de "' + w + '" acabaram: falta só marcar o fim.', 'Sem o anel dourado, "' + w + '" seria apenas um prefixo' + (Object.keys(G.node.kids).length ? ' de ' + T.words(G.node).filter(function(x){ return x !== w; }).join(', ') : '') + ', e a busca diria que ela não está na biblioteca.');
+  else if (a === 'fim') lines.push('Ainda faltam letras: "' + w.slice(G.li) + '".', 'Só se marca o fim depois da última letra.');
+  else if (want === 'seguir') lines.push('Já existe a sala "' + c + '" saindo de ' + (G.node.parent ? '"' + here + '"' : 'a raiz') + ' (ela veio de ' + T.words(G.node.kids[c]).join(', ') + ').', 'Reaproveitar a sala é o que faz a trie economizar espaço: prefixos em comum são guardados uma vez só.');
+  else lines.push('Não existe sala "' + c + '" saindo de ' + (G.node.parent ? '"' + here + '"' : 'a raiz') + (Object.keys(G.node.kids).length ? ' (só existem: ' + Object.keys(G.node.kids).sort().join(', ') + ')' : '') + '.', 'Quando a letra não existe, é preciso cavar uma sala nova.');
+  o = { cur: G.node.id, path: pathSet(G.node) };
+  if (want === 'cavar') o.ghost = { parent: G.node.id, ch: c };
+  if (want === 'seguir') o.ok = (function(){ var m = {}; m[G.node.kids[c].id] = 1; return m; })();
+  return { title: 'Aqui era ' + ACT_NAME[want], lines: lines, svgs: [{ label: 'Você está em ' + (G.node.parent ? '"' + here + '"' : 'a raiz'), svg: drawTrie(G.root, o) }] };
+}
+
+/* ---------- etapa 2: consultar ---------- */
+var ANS = { sim:'É palavra', prefixo:'Só prefixo', nao:'Não existe' };
+function answerQuery(a){
+  if (G.stage !== 1) return;
+  var q = G.qs[G.qi];
+  if (a !== q.a) return mistake(explainQuery(q, a));
+  feedback('"' + q.q + '": ' + ANS[q.a].toLowerCase() + '. Certo!', 'good');
+  G.qi++;
+  if (G.qi >= G.qs.length) { G.stage = 2; G.orc = T.oracle(G.root); G.picked = {}; render(); stageIntro(); return; }
+  render();
+}
+function queryWhy(q){
+  var wp = walkPath(G.root, q.q);
+  if (wp.broke) return { txt: 'O caminho quebra em "' + q.q.slice(0, wp.at) + '": não há sala "' + q.q[wp.at] + '" depois dela. A palavra não existe.', wp: wp };
+  if (wp.last.end) return { txt: 'O caminho ' + q.q.split('').join(' → ') + ' vai até o fim, e a última sala tem o anel dourado: é palavra guardada.', wp: wp };
+  return { txt: 'O caminho ' + q.q.split('').join(' → ') + ' existe, mas a última sala não tem o anel dourado: é só prefixo de ' + T.words(wp.last).join(', ') + '.', wp: wp };
+}
+function explainQuery(q, a){
+  var w = queryWhy(q), o = { path: w.wp.set }; if (!w.wp.broke) o.cur = w.wp.last.id; else o.bad = (function(){ var m = {}; m[w.wp.last.id] = 1; return m; })();
+  return { title: '"' + q.q + '": ' + ANS[q.a].toLowerCase(), lines: ['Você respondeu "' + ANS[a] + '".', w.txt], svgs: [{ label: 'Caminho de "' + q.q + '"', svg: drawTrie(G.root, o) }] };
+}
+
+/* ---------- etapa 3: oráculo ---------- */
+function togglePick(id){
+  if (G.stage !== 2) return;
+  if (G.picked[id]) delete G.picked[id]; else G.picked[id] = 1;
+  render();
+}
+function oracleDone(){
+  if (G.stage !== 2) return;
+  var ans = {}; G.orc.answer.forEach(function(w){ ans[T.walk(G.root, w).id] = w; });
+  var right = [], wrong = [], miss = [];
+  Object.keys(G.picked).forEach(function(id){ if (ans[id]) right.push(ans[id]); else wrong.push(T.prefixOf(nodeById(+id))); });
+  Object.keys(ans).forEach(function(id){ if (!G.picked[id]) miss.push(ans[id]); });
+  if (wrong.length || miss.length) {
+    var nb = wrong.length + miss.length; G.errs += nb; var pen = TM.penalty(nb * TM.P.err);
+    var okm = {}; Object.keys(ans).forEach(function(id){ okm[id] = 1; });
+    var bad = {}; Object.keys(G.picked).forEach(function(id){ if (!ans[id]) bad[id] = 1; });
+    Hints.modal({ title: 'As palavras com "' + G.orc.prefix + '" eram ' + G.orc.answer.length, lines: [
+      'Certas: ' + (right.join(', ') || 'nenhuma') + '.', miss.length ? 'Faltaram: ' + miss.join(', ') + '.' : 'Nenhuma faltou.', wrong.length ? 'Fora do prefixo ou sem anel dourado: ' + wrong.join(', ') + '.' : '',
+      'O autocompletar desce até a sala "' + G.orc.prefix + '" e recolhe todos os anéis dourados do galho que sai dela.'].filter(Boolean),
+      note: 'Cada palavra esquecida ou marcada a mais conta como um erro: **+' + pen + ' s** no total.',
+      svgs: [{ label: 'Respostas (verde)', svg: drawTrie(G.root, { ok: okm, bad: bad, path: pathSet(T.walk(G.root, G.orc.prefix)) }) }] });
+  }
+  finishRound();
+}
+function nodeById(id){ return T.nodes(G.root).filter(function(n){ return n.id === id; })[0]; }
+
+/* ---------- erros, dicas ---------- */
+function mistake(exp){ G.errs++; var s = TM.penalty('err'); feedback(exp.title + '. Penalidade: +' + s + ' s.', 'bad'); render(); exp.note = (exp.note ? exp.note + ' ' : '') + 'O cronômetro fica parado enquanto esta janela está aberta; o erro soma **+' + s + ' s** ao seu tempo.'; Hints.modal(exp); }
+function feedback(t, cls){ var f = $('feedback'); f.textContent = t; f.className = 'feedback ' + (cls || ''); }
+function hintCtx(){ if (G.stage === 0) return 'b' + G.wi + ':' + G.li; if (G.stage === 1) return 'q' + G.qi; if (G.stage === 2) return 'o'; return null; }
+function hint(){
+  var c = hintCtx(); if (!c) return;
+  if (G.hint.ctx !== c) G.hint = { ctx: c, level: 0 };
+  if (G.hint.level >= 2) { feedback('As duas camadas desta jogada já foram abertas.', ''); return; }
+  G.hint.level++; var cost = TM.penalty(G.hint.level === 1 ? 'h1' : 'h2'); G.hints++;
+  var lv = G.hint.level, txt;
+  if (G.stage === 0) {
+    var w = curWord(), want = T.action(G.node, w, G.li), kids = Object.keys(G.node.kids).sort(), here = G.node.parent ? '"' + T.prefixOf(G.node) + '"' : 'na raiz';
+    if (lv === 1) txt = want === 'fim' ? 'Você está em ' + here + ' e as letras de "' + w + '" acabaram. O que falta para ela existir?' : 'Você está ' + (G.node.parent ? 'em ' : '') + here + '. Salas que saem daqui: ' + (kids.join(', ') || 'nenhuma') + '. A próxima letra é ' + w[G.li] + '.';
+    else txt = want === 'fim' ? 'Marcar fim: a sala ganha o anel dourado.' : want === 'seguir' ? 'A sala ' + w[G.li] + ' já existe: Seguir.' : 'Não há sala ' + w[G.li] + ' aqui: Cavar.';
+  } else if (G.stage === 1) {
+    var q = G.qs[G.qi]; txt = lv === 1 ? 'Siga ' + q.q.split('').join(' → ') + ' a partir da raiz. O caminho vai até o fim? E a última sala tem anel dourado?' : queryWhy(q).txt;
+  } else {
+    txt = lv === 1 ? 'Ache a sala "' + G.orc.prefix + '" e olhe o galho que sai dela, para a direita.' : 'Há ' + G.orc.answer.length + ' anéis dourados nesse galho.';
+  }
+  feedback('Dica ' + lv + ' de 2 (+' + cost + ' s): ' + txt, '');
+}
+function finishRound(){
+  G.stage = 3; G.res = TM.finish({ words: G.words.slice(), errs: G.errs, hints: G.hints });
+  render(); feedback('Estante concluída! Média: ' + TM.fmtPer(G.res.v) + ' por letra' + (G.res.newBest ? ' (seu melhor tempo!)' : '') + '.', 'good');
+}
+
+/* ---------- telas ---------- */
+function hud(){ TM.hud(); $('round').textContent = G.round; }
+function render(){
+  hud();
+  $('stages').innerHTML = STAGES.map(function(s, i){ return '<span class="stg ' + (i < G.stage ? 'done' : i === G.stage ? 'cur' : '') + '"><i>' + (i < G.stage ? '✓' : i + 1) + '</i>' + s + '</span>'; }).join('');
+  var nodesN = T.size(G.root), letters = G.words.slice(0, G.stage > 0 ? G.words.length : G.wi).reduce(function(a, w){ return a + w.length; }, 0) + (G.stage === 0 ? G.li : 0);
+  $('counter').innerHTML = '<span>Letras das palavras</span><b>' + letters + '</b><span>Salas na trie</span><b>' + nodesN + '</b><span class="save">Salas economizadas</span><b class="save">' + Math.max(0, letters - nodesN) + '</b>';
+  var acts = '', lib = $('lib');
+  if (G.stage === 0) {
+    var w = curWord();
+    lib.innerHTML = drawTrie(G.root, { cur: G.node.id, path: pathSet(G.node) });
+    $('pTitle').textContent = 'Guarde "' + w + '"';
+    $('pText').innerHTML = '<div class="word">' + w.split('').map(function(c, i){ return '<span class="' + (i < G.li ? 'done' : i === G.li ? 'cur' : '') + '">' + c + '</span>'; }).join('') + '<span class="' + (G.li >= w.length ? 'end cur' : '') + '" style="font-size:22px;align-self:center">●</span></div>' +
+      '<p style="color:var(--muted);margin-top:4px">' + (G.li < w.length ? 'Próxima letra: <b style="color:var(--torch)">' + w[G.li] + '</b>. Ela já existe saindo da sala atual?' : 'As letras acabaram.') + '</p>';
+    acts = '<button class="btn" data-a="seguir"><span><kbd>1</kbd> Seguir</span><small>a sala já existe</small></button><button class="btn" data-a="cavar"><span><kbd>2</kbd> Cavar</span><small>criar sala nova</small></button><button class="btn" data-a="fim"><span><kbd>3</kbd> Marcar fim</span><small>a palavra acabou</small></button>';
+    $('sideTitle').textContent = 'Pergaminhos';
+    $('side').innerHTML = '<ul class="queue">' + G.words.map(function(x, i){ return '<li class="' + (i < G.wi ? 'done' : i === G.wi ? 'cur' : '') + '">' + (i < G.wi ? '✓ ' : i === G.wi ? '▸ ' : '') + x + '</li>'; }).join('') + '</ul>';
+  } else if (G.stage === 1) {
+    var q = G.qs[G.qi];
+    lib.innerHTML = drawTrie(G.root, {});
+    $('pTitle').textContent = 'Consulta ' + (G.qi + 1) + ' de ' + G.qs.length;
+    $('pText').innerHTML = '<p style="color:var(--muted)">Um visitante procura:</p><div class="word">' + q.q.split('').map(function(c){ return '<span>' + c + '</span>'; }).join('') + '</div>';
+    acts = '<button class="btn" data-q="sim"><span><kbd>1</kbd> É palavra</span><small>caminho completo e anel dourado</small></button><button class="btn" data-q="prefixo"><span><kbd>2</kbd> Só prefixo</span><small>caminho existe, sem anel</small></button><button class="btn" data-q="nao"><span><kbd>3</kbd> Não existe</span><small>o caminho quebra</small></button>';
+    $('sideTitle').textContent = 'Palavras guardadas';
+    $('side').innerHTML = '<p style="margin:0;color:var(--muted);font-size:15px">' + G.words.length + ' palavras nas estantes. Use a trie, não a lista: a lista some na próxima etapa.</p>';
+  } else if (G.stage === 2) {
+    lib.innerHTML = drawTrie(G.root, { pick: true, sel: G.picked });
+    $('pTitle').textContent = 'Autocompletar "' + G.orc.prefix + '…"';
+    $('pText').innerHTML = '<p>Clique em todas as salas com anel dourado que formam palavras começando com <b style="color:var(--torch);font-family:var(--display);font-size:22px;letter-spacing:.1em">' + G.orc.prefix + '</b>. Marcadas: <b>' + Object.keys(G.picked).length + '</b>.</p>';
+    acts = '<button class="btn primary" data-act="done"><span>Pronto <kbd>Enter</kbd></span><small>conferir as sugestões</small></button>';
+    $('sideTitle').textContent = 'Oráculo';
+    $('side').innerHTML = '<ul class="queue">' + Object.keys(G.picked).map(function(id){ return '<li class="cur">' + esc(T.prefixOf(nodeById(+id))) + '</li>'; }).join('') + '</ul>' + (Object.keys(G.picked).length ? '' : '<p style="margin:0;color:var(--muted);font-size:15px">Nenhuma sugestão marcada ainda.</p>');
+  } else {
+    lib.innerHTML = drawTrie(G.root, {});
+    var letters2 = G.words.reduce(function(a, w){ return a + w.length; }, 0), n2 = T.size(G.root);
+    $('pTitle').textContent = 'Estante ' + G.round + ' concluída!';
+    $('pText').innerHTML = '<p>As ' + G.words.length + ' palavras somam <b>' + letters2 + '</b> letras, mas a trie usou só <b>' + n2 + '</b> salas: <b style="color:var(--moss)">' + (letters2 - n2) + ' salas economizadas</b> pelos prefixos em comum.</p>' + '<p style="margin:8px 0 0;font-size:18px">Tempo: <b>' + TM.fmt(G.res.ms) + '</b> no cronômetro + <b style="color:var(--ember)">' + Math.round(G.res.pen / 1000) + ' s</b> de penalidade (' + G.errs + (G.errs === 1 ? ' erro' : ' erros') + ', ' + G.hints + (G.hints === 1 ? ' dica' : ' dicas') + ') = <b>' + TM.fmt(G.res.total) + '</b> ÷ ' + G.res.n + ' letras = <b style="color:var(--gold);font-size:22px">' + TM.fmtPer(G.res.v) + ' por letra</b>' + (G.res.newBest ? ' <span style="color:var(--moss);font-weight:700">· seu melhor tempo!</span>' : '') + '</p>';
+    acts = '<button class="btn primary" data-act="next"><span>Nova estante <kbd>Enter</kbd></span><small>novas palavras</small></button><button class="btn" data-act="rank"><span>Ver ranking</span><small>os mais rápidos</small></button>';
+    $('sideTitle').textContent = 'Palavras guardadas';
+    $('side').innerHTML = '<ul class="queue">' + T.words(G.root).map(function(w){ return '<li class="done">' + w + '</li>'; }).join('') + '</ul>';
+  }
+  $('actions').innerHTML = acts;
+}
+
+/* ---------- eventos ---------- */
+$('actions').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.a) doAction(b.dataset.a); else if (b.dataset.q) answerQuery(b.dataset.q); else if (b.dataset.act === 'done') oracleDone(); else if (b.dataset.act === 'next') newRound(); else if (b.dataset.act === 'rank') TM.show();
+});
+$('lib').addEventListener('click', function(e){ var g = e.target.closest('[data-id]'); if (g) togglePick(+g.dataset.id); });
+$('lib').addEventListener('keydown', function(e){ if (e.key !== 'Enter' && e.key !== ' ') return; var g = e.target.closest('[data-id]'); if (!g) return; e.preventDefault(); e.stopPropagation(); togglePick(+g.dataset.id); });
+document.addEventListener('keydown', function(e){
+  if (TM.isOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('#lib [tabindex]')) return;
+  var k = e.key;
+  if (k === 'h' || k === 'H') { hint(); return; }
+  if (G.stage === 0 && /^[123]$/.test(k)) doAction(['seguir', 'cavar', 'fim'][+k - 1]);
+  else if (G.stage === 1 && /^[123]$/.test(k)) answerQuery(['sim', 'prefixo', 'nao'][+k - 1]);
+  else if (G.stage === 2 && k === 'Enter') { e.preventDefault(); oracleDone(); }
+  else if (G.stage === 3 && k === 'Enter') { e.preventDefault(); newRound(); }
+});
+$('hintBtn').addEventListener('click', hint);
+$('rankBtn').addEventListener('click', function(){ TM.show(); });
+$('helpBtn').addEventListener('click', function(){ var it = INTRO[['guardar', 'consultar', 'oraculo', 'oraculo'][G.stage]](); it.button = 'Voltar à biblioteca'; Hints.modal(it); });
+
+Hints.modal({ tone:'info', kicker:'Masmorra · Trie', title:'A Biblioteca dos Ecos', button:'Entrar na biblioteca',
+  intro:'Nesta biblioteca as palavras são guardadas numa trie, a árvore de prefixos usada no autocompletar e em dicionários. Cada estante tem três etapas:', steps:[
+  '**Guardar palavras** sala por sala, reaproveitando os prefixos que já existem.',
+  '**Consultar o catálogo:** dizer se uma palavra está guardada, se é só prefixo ou se não existe.',
+  '**Oráculo do autocompletar:** achar todas as palavras que começam com um prefixo.',
+  '**O cronômetro mede a estante inteira**, das três etapas. Errou? Uma janela explica com a trie desenhada.',
+  '**Corrida contra o relógio:** o cronômetro para enquanto uma janela de instrução ou de erro está aberta. Cada erro soma **+10 s** e cada dica (`H`) soma **+5 s** (1ª camada) ou **+15 s** (2ª). O **Ranking** usa a **média por letra** (tempo total ÷ letras da rodada), para palavras longas não atrapalharem. As 10 menores médias entram, com nome de até 3 caracteres.'],
+  onClose: function(){ G.seenIntro.guardar = 1; Hints.modal(INTRO.guardar()); } });
+G.seenIntro.guardar = 1;
+newRound();
+window.__trie = { TM: TM, get G(){ return G; }, T: T, doAction: doAction, answerQuery: answerQuery, togglePick: togglePick, oracleDone: oracleDone };
+})();
+</script>
+</body>
+</html>

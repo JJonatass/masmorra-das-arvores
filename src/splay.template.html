@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O Mercado da Torre</title>
+<style>
+:root{
+  --bg:#16151F; --stone:#23222F; --stone-2:#2E2C3D; --line:#45425A;
+  --ink:#ECE3CF; --muted:#A9A1B8; --torch:#F2A93B; --ember:#E5604A; --moss:#7CC39A; --gold:#F2C14E; --plum:#B46BE0;
+  --display:'IM Fell English SC', Georgia, serif;
+  --body:'Alegreya Sans', 'Trebuchet MS', Verdana, sans-serif;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;
+  background-image:radial-gradient(1200px 500px at 30% -10%, #2c1f3a 0%, transparent 60%);background-attachment:fixed}
+button{font-family:var(--body);font-size:16px;cursor:pointer;color:inherit}
+button:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1320px;margin:0 auto;padding:14px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px}
+.brand{flex:1;min-width:220px}
+.brand small{display:block;color:var(--plum);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.brand h1{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1.05}
+.stat{display:flex;flex-direction:column;align-items:flex-end}
+.stat span{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.stat b{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat b.gold{color:var(--gold)}
+.hbtn{background:var(--stone-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px}
+.hbtn:hover{border-color:var(--torch)}
+kbd{font-family:var(--body);font-size:12px;font-weight:700;border:1px solid currentColor;border-radius:5px;padding:0 5px;opacity:.85}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+.tower{background:#100F17;border:1px solid var(--line);border-radius:14px;min-height:340px;padding:10px;display:flex;align-items:center;justify-content:center}
+.tower svg{display:block;max-width:100%;height:auto}
+.prompt{background:var(--stone);border:1px solid var(--line);border-left:5px solid var(--torch);border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.prompt h2{font-family:var(--display);font-weight:400;font-size:25px;margin:0;line-height:1.15}
+.prompt p{margin:0}
+.feedback{min-height:1.45em;font-weight:500}
+.feedback.good{color:#B7F0CC} .feedback.bad{color:#FFB3A6}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--stone-2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-weight:700;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left}
+.btn small{font-weight:500;color:var(--muted);font-size:13px}
+.btn:hover:not(:disabled){border-color:var(--torch)}
+.btn.primary{background:var(--torch);color:#1d1408;border-color:var(--torch)} .btn.primary small{color:#5a3d10}
+.btn.move{align-items:center;min-width:110px} .btn.move span{font-size:26px;color:var(--torch);line-height:1}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--stone);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 8px}
+.queue{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.queue li{display:flex;justify-content:space-between;gap:8px;border-left:3px solid var(--line);padding:2px 8px;color:var(--muted)}
+.queue li.cur{border-color:var(--torch);color:var(--ink);font-weight:700}
+.queue li.done{border-color:var(--moss);color:var(--moss)}
+.queue li b{font-variant-numeric:tabular-nums}
+.cost{display:flex;flex-direction:column;gap:10px}
+.cost .row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:15px}
+.cost .bar{grid-column:1/-1;height:14px;border-radius:7px;background:var(--stone-2);overflow:hidden}
+.cost .bar span{display:block;height:100%;transition:width .3s}
+.cost b{font-variant-numeric:tabular-nums}
+.save{color:var(--moss);font-weight:800}
+table.res{width:100%;border-collapse:collapse;font-size:15px}
+table.res th{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase;text-align:right;padding:2px 6px}
+table.res th:first-child,table.res td:first-child{text-align:left}
+table.res td{padding:3px 6px;text-align:right;font-variant-numeric:tabular-nums;border-top:1px solid var(--line)}
+.stat b.time{font-variant-numeric:tabular-nums;min-width:5.2ch;display:inline-block}
+.stat b.pen{color:var(--ember)}
+@media (max-width:980px){ .main{grid-template-columns:1fr} }
+@media (max-width:600px){ .brand h1{font-size:24px} .btn.move{min-width:0;flex:1} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><small>Masmorra · Splay</small><h1>O Mercado da Torre</h1></div>
+    <div class="stat"><span>Tempo</span><b id="time" class="gold time">0:00,0</b></div>
+    <div class="stat"><span>Penalidade</span><b id="pen" class="pen">+0 s</b></div>
+    <div class="stat"><span>Melhor tempo</span><b id="best" class="time">–</b></div>
+    <div class="stat"><span>Dia</span><b id="dayN">1</b></div>
+    <button class="hbtn" id="rankBtn">Ranking</button>
+    <button class="hbtn" id="helpBtn">Como jogar</button>
+    <button class="hbtn" id="hintBtn">Dica <kbd>H</kbd></button>
+  </header>
+  <div class="main">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="tower" id="tower" aria-live="polite"></div>
+      <div class="prompt">
+        <h2 id="pTitle"></h2>
+        <div id="pText"></div>
+        <p class="feedback" id="feedback"></p>
+        <div class="actions" id="actions"></div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="card"><h3>Custo do dia</h3><div class="cost" id="cost"></div></div>
+      <div class="card"><h3>Fila de fregueses</h3><ul class="queue" id="queue"></ul></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+var E = Engine, M = Mercado;
+var TM = Tempo.create({ board: 'splay', per: false, focusAfter: 'rankBtn', count: function(x){ return x.n || 11; } });
+
+var G = { day: 0, seenIntro: false };
+function newDay(){
+  var d = M.day(G.day); G.day++;
+  G.tree = E.clone(d.tree); G.orig = d.tree; G.seq = d.seq; G.names = d.names; G.ri = 0; G.errs = 0; G.hints = 0; G.res = null; TM.start();
+  G.mine = 0; G.fixed = 0; G.log = []; G.hint = { ctx: null, level: 0 };
+  startRequest(); render();
+}
+function startRequest(){
+  var k = G.seq[G.ri]; G.phase = 'seek'; G.at = G.tree.root.key; G.path = [G.tree.root.key]; G.steps = [];
+  var c = M.costOf(G.tree, k), cf = M.costOf(G.orig, k); G.mine += c; G.fixed += cf; G.reqCost = c; G.reqFixed = cf;
+  if (G.at === k) { G.phase = 'done'; feedback(name(k) + ' já estava no topo: custo 1. É a vantagem da splay!', 'good'); }
+}
+function name(k){ return G.names[k] + ' (' + k + ')'; }
+
+/* ---------- busca ---------- */
+function move(dir){
+  if (G.phase !== 'seek') return;
+  var k = G.seq[G.ri], n = E.find(G.tree, G.at), need = k < n.key ? 'L' : 'R';
+  if (dir !== need) return mistake(Hints.explainStep(G.tree, k, n.key, dir));
+  var nx = need === 'L' ? n.left : n.right; G.at = nx.key; G.path.push(nx.key);
+  if (nx.key === k) { G.phase = 'splay'; feedback('Achou ' + name(k) + ' na profundidade ' + E.depth(nx) + '. Agora suba até o topo.', 'good'); }
+  render();
+}
+/* ---------- splay ---------- */
+var SPN = { zig:'Zig', zigzig:'Zig-zig', zigzag:'Zig-zag' };
+function splay(s){
+  if (G.phase !== 'splay') return;
+  var x = E.find(G.tree, G.seq[G.ri]), d = E.splayDiagnose(x);
+  if (s !== d) return mistake(Hints.explainSplay(G.tree, x, s));
+  E.splayApply(G.tree, x, d); G.steps.push(SPN[d]);
+  if (!x.parent) { G.phase = 'done'; feedback(name(x.key) + ' está no topo (' + G.steps.join(' → ') + ').', 'good'); }
+  render();
+}
+function nextRequest(){
+  if (G.phase !== 'done') return;
+  G.log.push({ k: G.seq[G.ri], mine: G.reqCost, fixed: G.reqFixed });
+  G.ri++;
+  if (G.ri >= G.seq.length) return endDay();
+  G.hint = { ctx: null, level: 0 };
+  startRequest(); render();
+}
+function endDay(){
+  G.phase = 'end';
+  G.res = TM.finish({ n: G.seq.length, saved: G.fixed - G.mine, errs: G.errs, hints: G.hints });
+  feedback('Fim do dia ' + G.day + '! Tempo final: ' + TM.fmt(G.res.total) + (G.res.newBest ? ' (seu melhor tempo!)' : '') + '.', 'good'); render();
+}
+
+/* ---------- erros, dicas ---------- */
+function mistake(exp){ G.errs++; var s = TM.penalty('err'); feedback(exp.title + '. Penalidade: +' + s + ' s.', 'bad'); render(); exp.note = (exp.note ? exp.note + ' ' : '') + 'O cronômetro fica parado enquanto esta janela está aberta; o erro soma **+' + s + ' s** ao seu tempo.'; Hints.modal(exp); }
+function feedback(t, cls){ var f = $('feedback'); f.textContent = t; f.className = 'feedback ' + (cls || ''); }
+function hint(){
+  if (G.phase !== 'seek' && G.phase !== 'splay') return;
+  var c = G.phase + G.ri + ':' + G.at + ':' + G.steps.length;
+  if (G.hint.ctx !== c) G.hint = { ctx: c, level: 0 };
+  if (G.hint.level >= 2) { feedback('As duas camadas desta jogada já foram abertas.', ''); return; }
+  G.hint.level++; var cost = TM.penalty(G.hint.level === 1 ? 'h1' : 'h2'); G.hints++;
+  var pair = G.phase === 'seek' ? Hints.step(G.tree, G.seq[G.ri], G.at) : Hints.splay(E.find(G.tree, G.seq[G.ri]));
+  feedback('Dica ' + G.hint.level + ' de 2 (+' + cost + ' s): ' + pair[G.hint.level - 1], '');
+}
+
+/* ---------- telas ---------- */
+function hud(){ TM.hud(); $('dayN').textContent = G.day; }
+function render(){
+  hud();
+  var k = G.seq[G.ri], marks = {}, badges = {}, acts = '';
+  if (G.phase === 'seek') { G.path.forEach(function(p){ marks[p] = 'path'; }); marks[k] = 'ok'; marks[G.at] = 'cur'; }
+  if (G.phase === 'splay') { var x = E.find(G.tree, k); marks[k] = 'cur'; badges[k] = 'X'; if (x.parent) { badges[x.parent.key] = 'P'; if (x.parent.parent) badges[x.parent.parent.key] = 'A'; } }
+  if (G.phase === 'done') marks[k] = 'ok';
+  $('tower').innerHTML = Hints.svgTree(G.tree, { marks: marks, badges: badges });
+  if (G.phase === 'seek') {
+    $('pTitle').textContent = 'Freguês ' + (G.ri + 1) + ' de ' + G.seq.length + ' quer ' + G.names[k];
+    $('pText').innerHTML = '<p>O item <b style="color:var(--moss)">' + k + '</b> está na sala verde. Desça do topo até ele: <b>←</b> se ' + k + ' for menor que a sala atual, <b>→</b> se for maior. Você está em <b style="color:var(--torch)">' + G.at + '</b>.</p>';
+    acts = '<button class="btn move" data-m="L"><span>◀</span><small>menor <kbd>←</kbd></small></button><button class="btn move" data-m="R"><span>▶</span><small>maior <kbd>→</kbd></small></button>';
+  } else if (G.phase === 'splay') {
+    var xx = E.find(G.tree, k);
+    $('pTitle').textContent = 'Suba ' + G.names[k] + ' (' + k + ') até o topo';
+    $('pText').innerHTML = '<p>Profundidade atual de X: <b>' + E.depth(xx) + '</b>.' + (G.steps.length ? ' Passos: ' + G.steps.join(' → ') + '.' : '') + ' Olhe X, o pai P e o avô A.</p>';
+    acts = '<button class="btn" data-s="zig"><span><kbd>1</kbd> Zig</span><small>o pai é o topo</small></button><button class="btn" data-s="zigzig"><span><kbd>2</kbd> Zig-zig</span><small>mesmo lado: avô, depois pai</small></button><button class="btn" data-s="zigzag"><span><kbd>3</kbd> Zig-zag</span><small>lados opostos: pai, depois avô</small></button>';
+  } else if (G.phase === 'done') {
+    $('pTitle').textContent = G.names[k] + ' entregue!';
+    $('pText').innerHTML = '<p>Este pedido custou <b>' + G.reqCost + '</b> ' + (G.reqCost === 1 ? 'moeda' : 'moedas') + ' na sua torre e custaria <b>' + G.reqFixed + '</b> na torre parada. Agora ' + k + ' está no topo: se for pedido de novo, sai quase de graça.</p>';
+    acts = '<button class="btn primary" data-act="next"><span>Próximo freguês <kbd>Enter</kbd></span><small>atender a fila</small></button>';
+  } else {
+    var saved = G.fixed - G.mine;
+    $('pTitle').textContent = 'Fim do dia ' + G.day;
+    $('pText').innerHTML = '<p>Sua torre splay gastou <b>' + G.mine + '</b> moedas; uma torre que nunca gira gastaria <b>' + G.fixed + '</b>. Economia: <b class="save">' + saved + ' moedas</b>. Os itens mais pedidos subiram para perto do topo e ficaram baratos.</p>' +
+      '<table class="res"><thead><tr><th>Pedido</th><th>Torre parada</th><th>Sua splay</th></tr></thead><tbody>' + G.log.map(function(r){ return '<tr><td>' + esc(G.names[r.k]) + ' (' + r.k + ')</td><td>' + r.fixed + '</td><td' + (r.mine < r.fixed ? ' class="save"' : '') + '>' + r.mine + '</td></tr>'; }).join('') + '</tbody></table>' +
+      '<p style="margin:8px 0 0;font-size:18px">Tempo: <b>' + TM.fmt(G.res.ms) + '</b> no cronômetro + <b style="color:var(--ember)">' + Math.round(G.res.pen / 1000) + ' s</b> de penalidade (' + G.errs + (G.errs === 1 ? ' erro' : ' erros') + ', ' + G.hints + (G.hints === 1 ? ' dica' : ' dicas') + ') = <b style="color:var(--gold);font-size:22px">' + TM.fmt(G.res.total) + '</b>' + (G.res.newBest ? ' <span style="color:var(--moss);font-weight:700">· seu melhor tempo!</span>' : '') + '</p>';
+    acts = '<button class="btn primary" data-act="day"><span>Próximo dia <kbd>Enter</kbd></span><small>torre nova, novos fregueses</small></button><button class="btn" data-act="rank"><span>Ver ranking</span><small>os mais rápidos</small></button>';
+  }
+  $('actions').innerHTML = acts;
+  var mx = Math.max(G.fixed, G.mine, 1);
+  $('cost').innerHTML = '<div class="row"><span>Sua torre (splay)</span><b>' + G.mine + '</b><div class="bar"><span style="width:' + (100 * G.mine / mx) + '%;background:var(--moss)"></span></div></div>' +
+    '<div class="row"><span>Torre parada</span><b>' + G.fixed + '</b><div class="bar"><span style="width:' + (100 * G.fixed / mx) + '%;background:var(--ember)"></span></div></div>' +
+    '<div class="row"><span class="save">Economia até agora</span><b class="save">' + (G.fixed - G.mine) + '</b></div>' +
+    '<p style="margin:0;font-size:13px;color:var(--muted)">Custo de um pedido = salas visitadas do topo até o item.</p>';
+  var q = '';
+  for (var i = 0; i < G.seq.length; i++) {
+    if (i < G.ri - 2 || i > G.ri + 5) continue;
+    var cls = i < G.ri || (i === G.ri && (G.phase === 'done' || G.phase === 'end')) ? 'done' : i === G.ri ? 'cur' : '';
+    q += '<li class="' + cls + '"><span>' + (i + 1) + '. ' + esc(G.names[G.seq[i]]) + '</span><b>' + G.seq[i] + '</b></li>';
+  }
+  $('queue').innerHTML = q;
+}
+
+/* ---------- eventos ---------- */
+$('actions').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.m) move(b.dataset.m); else if (b.dataset.s) splay(b.dataset.s); else if (b.dataset.act === 'next') nextRequest(); else if (b.dataset.act === 'day') newDay(); else if (b.dataset.act === 'rank') TM.show();
+});
+document.addEventListener('keydown', function(e){
+  if (TM.isOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  var k = e.key;
+  if (k === 'h' || k === 'H') { hint(); return; }
+  if (G.phase === 'seek') { if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); move('L'); } else if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); move('R'); } }
+  else if (G.phase === 'splay' && /^[123]$/.test(k)) splay(['zig', 'zigzig', 'zigzag'][+k - 1]);
+  else if (G.phase === 'done' && k === 'Enter') { e.preventDefault(); nextRequest(); }
+  else if (G.phase === 'end' && k === 'Enter') { e.preventDefault(); newDay(); }
+});
+$('hintBtn').addEventListener('click', hint);
+$('rankBtn').addEventListener('click', function(){ TM.show(); });
+var HOW = { tone:'info', kicker:'Como atender', title:'Um freguês de cada vez', button:'Abrir o mercado', steps:[
+  '**Ache o item.** Você começa no topo da torre. O item pedido está na sala verde. Use `←` se o número dele for menor que o da sala atual e `→` se for maior.',
+  '**Suba o item até o topo.** Ao chegar nele, ele vira **X**, com **P** (pai) e **A** (avô) marcados. O pai é o topo: **Zig** (`1`). X e o pai do mesmo lado: **Zig-zig** (`2`). Lados opostos: **Zig-zag** (`3`).',
+  '**Repare na fila.** Os fregueses pedem os mesmos itens várias vezes. Um item que já subiu fica perto do topo e o próximo pedido dele custa pouco.',
+  '**Custo do dia:** cada pedido custa uma moeda por sala visitada. O quadro compara a sua torre com uma que nunca gira.',
+  '**O cronômetro mede o dia inteiro**, do primeiro ao último freguês. Todo dia tem o mesmo número de fregueses, para os tempos serem comparáveis.',
+  '**Corrida contra o relógio:** o cronômetro para enquanto uma janela de instrução ou de erro está aberta. Cada erro soma **+10 s** e cada dica (`H`) soma **+5 s** (1ª camada) ou **+15 s** (2ª). Os 10 menores tempos entram no **Ranking**, com nome de até 3 caracteres.'] };
+$('helpBtn').addEventListener('click', function(){ var it = Object.assign({}, HOW, { button: 'Voltar ao mercado' }); Hints.modal(it); });
+
+Hints.modal({ tone:'info', kicker:'Masmorra · Splay', title:'O Mercado da Torre', button:'Continuar',
+  intro:'O mercado guarda os itens numa torre, que é uma árvore binária de busca. Atender um freguês custa uma moeda por sala percorrida. A árvore splay tem um truque: todo item atendido sobe até o topo.', steps:[
+  'Itens muito pedidos acabam morando perto do topo e ficam baratos.',
+  'Itens esquecidos descem aos poucos, sem atrapalhar.',
+  'No fim de cada dia, você vê quanto a sua torre economizou em relação a uma torre que nunca gira.'],
+  onClose: function(){ Hints.modal(HOW); } });
+newDay();
+window.__mercado = { TM: TM, get G(){ return G; }, E: E, move: move, splay: splay };
+})();
+</script>
+</body>
+</html>

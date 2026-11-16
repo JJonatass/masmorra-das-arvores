@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "node build.js",
-    "test": "node tests/test.js && node tests/test_hints.js && node tests/test_ranking_api.js"
+    "test": "node tests/test.js && node tests/test_hints.js && node tests/test_ranking_api.js && node tests/test_huffman.js && node tests/test_trie.js && node tests/test_splay.js"
   },
   "devDependencies": {
     "@fontsource/alegreya-sans": "^5.0.0",

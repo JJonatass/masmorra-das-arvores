@@ -4,13 +4,15 @@ const fs = require('fs'), path = require('path');
 const src = f => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 const engine = src('engine.js').replace("if (typeof module !== 'undefined') module.exports = Engine;\n", '');
 const hints = src('hints.js');
-const ranking = src('ranking.js');
+const ranking = src('ranking.js') + '\n' + src('placar.js').replace(/if \(typeof module !== 'undefined'\) module\.exports = \w+;\n?/, '');
 const font = f => fs.readFileSync(require.resolve('@fontsource/' + f)).toString('base64');
 let css = `@font-face{font-family:'IM Fell English SC';font-weight:400;font-display:swap;src:url(data:font/woff2;base64,${font('im-fell-english-sc/files/im-fell-english-sc-latin-400-normal.woff2')}) format('woff2')}\n`;
 for (const w of [400, 500, 700, 800]) css += `@font-face{font-family:'Alegreya Sans';font-weight:${w};font-display:swap;src:url(data:font/woff2;base64,${font(`alegreya-sans/files/alegreya-sans-latin-${w}-normal.woff2`)}) format('woff2')}\n`;
 
-function game(tpl, withHints) {
-  let h = src(tpl).replace('/*ENGINE*/', () => engine + (withHints ? '\n' + hints + '\n' + ranking : ''));
+const strip = s => s.replace(/if \(typeof module !== 'undefined'\) module\.exports = \w+;\n?/, '');
+function game(tpl, withHints, extra) {
+  const more = extra ? '\n' + hints + '\n' + ranking + '\n' + extra.map(f => strip(src(f))).join('\n') : (withHints ? '\n' + hints + '\n' + ranking : '');
+  let h = src(tpl).replace('/*ENGINE*/', () => engine + more);
   return h.replace(/<!--FONTS-->[\s\S]*?<!--\/FONTS-->/, '');
 }
 function offline(h) {
@@ -21,10 +23,14 @@ function offline(h) {
 }
 const out = (f, h) => { fs.writeFileSync(path.join(__dirname, f), h); console.log(f, (h.length / 1024 | 0) + ' KB'); };
 
-const games = { queda: game('arcade.template.html', true), heroi: game('heroi.template.html', true), arena: game('arena.template.html', true) };
+const games = { queda: game('arcade.template.html', true), heroi: game('heroi.template.html', true), arena: game('arena.template.html', true),
+  huffman: game('huffman.template.html', true, ['tempo.js', 'huffman.js']), trie: game('trie.template.html', true, ['tempo.js', 'trie.js']), splay: game('splay.template.html', true, ['tempo.js', 'splay.js']) };
 out('jogos/queda-das-chaves.html', offline(games.queda));
 out('jogos/heroi-da-cripta.html', offline(games.heroi));
 out('jogos/arena-das-arvores.html', offline(games.arena));
+out('jogos/forja-de-huffman.html', offline(games.huffman));
+out('jogos/biblioteca-dos-ecos.html', offline(games.trie));
+out('jogos/mercado-da-torre.html', offline(games.splay));
 out('jogos/masmorra-perguntas.html', offline(game('perguntas.template.html', true)));
 
 const LS = String.fromCharCode(0x2028), PS = String.fromCharCode(0x2029);

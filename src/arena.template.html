@@ -107,6 +107,18 @@ select,input[type=text]{background:var(--stone-2);border:1px solid var(--line);b
 .result .big{font-family:var(--display);font-size:44px;line-height:1}
 .result.ok .big{color:var(--moss)} .result.no .big{color:var(--ember)}
 .center{text-align:center}
+.sololog{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;max-width:620px;margin:0 auto}
+.sololog div{background:var(--stone-2);border:1px solid var(--line);border-radius:10px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.sololog div.ok{border-color:var(--moss)} .sololog div.no{border-color:var(--ember)}
+.sololog b{font-family:var(--display);font-weight:400;color:var(--muted);font-size:15px} .sololog span{font-size:22px;font-weight:800} .sololog .ok span{color:var(--moss)} .sololog .no span{color:var(--ember)} .sololog small{color:var(--muted);font-size:13px}
+.opt .keyhint{margin-left:auto;padding:1px 7px;border:1.5px solid currentColor;border-radius:6px;font-size:13px;font-weight:700;opacity:.65;white-space:nowrap}
+.card.solo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;border-color:var(--torch)}
+.card.solo > div:first-child{flex:1 1 420px}
+.opt.wrong{opacity:.75;outline:4px dashed var(--ember);outline-offset:3px}
+.opt.wrong::after{content:"✗ sua resposta";position:absolute;right:12px;top:6px;font-size:14px}
+.opt.mine{outline:4px solid var(--ink);outline-offset:3px}
+button.opt{cursor:pointer}
+button.opt:disabled{cursor:default}
 
 @media (max-width:860px){ .qbody{grid-template-columns:1fr} .modes{grid-template-columns:1fr} .grid2{grid-template-columns:1fr} }
 @media (max-width:520px){ .opts{grid-template-columns:1fr} .opt{min-height:64px} .board li{font-size:17px;grid-template-columns:34px 1fr auto} .board .gain{display:none} }
@@ -324,7 +336,7 @@ function scoreLive(){
     p.score += gain; p.last = { ok: ok, gain: gain, answered: !!a, c: a ? a.c : -1 };
   });
 }
-function hostHint(){ if (!T || T.phase !== 'question' || (T.hint || 0) >= 2) return; T.hint = (T.hint || 0) + 1; broadcast(); render(); }
+function hostHint(){ if (!T || T.mode === 'solo' || T.phase !== 'question' || (T.hint || 0) >= 2) return; T.hint = (T.hint || 0) + 1; broadcast(); render(); }
 document.addEventListener('keydown', function(e){ if ((e.key === 'h' || e.key === 'H') && !(e.target.closest && e.target.closest('input'))) { if (T) hostHint(); else if (S && S.st && S.st.phase === 'question') studentHint(); } });
 function scoreTeams(){
   T.teams.forEach(function(tm){ var hit = !!T.teamHits[tm.id]; tm.last = hit ? 1000 : 0; tm.score += tm.last; });
@@ -437,7 +449,99 @@ function updateStudentTimer(){
 setInterval(updateStudentTimer, 250);
 
 /* ================= telas ================= */
+/* ================= desafio individual (ranking da Arena) ================= */
+var SOLO_N = 15, SOLO_SECS = 30;
+function soloIntro(){
+  return { tone:'info', kicker:'Arena · desafio individual', title:'Como funciona o desafio', button:'Começar o desafio', steps:[
+    'São **' + SOLO_N + ' perguntas** sorteadas de todos os assuntos: BST, percursos, AVL, rubro-negra e splay.',
+    'Olhe a **árvore** e escolha a opção certa clicando nela ou com as teclas `1` `2` `3` `4` (ou `A` `B` `C` `D`). Você tem até **' + SOLO_SECS + ' s** por pergunta; se o tempo acabar, conta como erro.',
+    'Cada acerto vale **1 ponto**. O relógio mede o **tempo total de resposta**: ele só corre enquanto a pergunta está na tela e para durante a explicação.',
+    'No ranking da Arena, vence quem tem **mais acertos**; no **empate**, vence o **menor tempo total**.',
+    'Não há dicas no desafio. Depois de cada resposta aparece a explicação, e `Enter` passa para a próxima.'] };
+}
+function newSolo(){ var it = soloIntro(); it.onClose = startSolo; Hints.modal(it); }
+function startSolo(){
+  T = { mode:'solo', quiz: makeQuiz(SOLO_N, DEFAULTS.topics), secs: SOLO_SECS, i: -1, phase:'question', hits: 0, ms: 0, log: [], tick: null, qStart: 0 };
+  soloNext();
+}
+function soloNext(){
+  clearInterval(T.tick);
+  T.i++; if (T.i >= T.quiz.length) return soloEnd();
+  T.phase = 'question'; T.qStart = performance.now(); T.pick = null;
+  render(); T.tick = setInterval(soloTick, 200);
+}
+function soloLeft(){ return Math.max(0, T.secs * 1000 - (performance.now() - T.qStart)); }
+function soloTick(){
+  if (!T || T.mode !== 'solo' || T.phase !== 'question') return;
+  var left = soloLeft(), bar = $('tbar'), sec = $('tsec');
+  if (bar) bar.style.width = (100 * left / (T.secs * 1000)) + '%'; if (sec) sec.textContent = Math.ceil(left / 1000);
+  var tot = $('soloTime'); if (tot) tot.textContent = Placar.fmtT(T.ms + (T.secs * 1000 - left));
+  if (left <= 0) soloAnswer(-1);
+}
+function soloAnswer(c){
+  if (!T || T.mode !== 'solo' || T.phase !== 'question') return;
+  clearInterval(T.tick);
+  var q = curQ(), t = Math.min(T.secs * 1000, Math.round(performance.now() - T.qStart)), ok = c === q.correct;
+  T.ms += t; if (ok) T.hits++;
+  T.log.push({ ok: ok, t: t, c: c, topic: q.topic }); T.pick = c; T.phase = 'reveal';
+  render();
+}
+function soloEnd(){
+  clearInterval(T.tick); T.phase = 'end'; T.ms = Math.round(T.ms);
+  var best = null; try { best = JSON.parse(localStorage.getItem('masmorra-arena-melhor') || 'null'); } catch (e) {}
+  T.newBest = !best || T.hits > best.hits || (T.hits === best.hits && T.ms < best.ms);
+  if (T.newBest) { try { localStorage.setItem('masmorra-arena-melhor', JSON.stringify({ hits: T.hits, ms: T.ms })); } catch (e) {} }
+  render();
+  var rec = { hits: T.hits, ms: Math.max(1000, T.ms), n: SOLO_N };
+  setTimeout(function(){ if (T && T.mode === 'solo' && T.phase === 'end') Placar.after('arena', rec, function(){ var b = $('soloAgain'); if (b) try { b.focus({ preventScroll:true }); } catch (e) {} }); }, 600);
+}
+function renderSolo(){
+  var q = T.i >= 0 && T.i < T.quiz.length ? curQ() : null;
+  var score = '<span class="pill">Acertos <b id="soloHits">' + T.hits + '</b> de ' + Math.min(T.i + (T.phase === 'question' ? 0 : 1), SOLO_N) + '</span><span class="pill">Tempo total <b id="soloTime">' + Placar.fmtT(T.ms) + '</b></span>';
+  if (T.phase === 'question' || T.phase === 'reveal') {
+    var rev = T.phase === 'reveal', last = T.log[T.log.length - 1];
+    var h = '<div class="qhead"><span class="num">Pergunta ' + (T.i + 1) + ' de ' + SOLO_N + '</span>' +
+      (rev ? '<span class="pill" style="border-color:' + (last.ok ? 'var(--moss)' : 'var(--ember)') + ';color:' + (last.ok ? 'var(--moss)' : 'var(--ember)') + '">' + (last.ok ? 'Acertou! +1' : last.c < 0 ? 'Tempo esgotado' : 'Errou') + ' · ' + (last.t / 1000).toFixed(1).replace('.', ',') + ' s</span>' : '<div class="timer"><span id="tbar" style="width:100%"></span></div><span class="secs" id="tsec">' + T.secs + '</span>') +
+      score + '</div>';
+    h += '<div class="qbody"><div><p class="prompt">' + esc(q.prompt) + '</p><div class="treebox">' + treeSVG(q.tree, 760) + '</div></div><div><div class="opts" id="soloOpts">';
+    q.opts.forEach(function(o, i){
+      var cls = rev ? (i === q.correct ? 'right' : i === T.pick ? 'wrong' : 'dim') : '';
+      h += optHTML(o, i, cls, 'button') + '<span class="keyhint" aria-hidden="true">tecla ' + (i + 1) + '</span></button>';
+    });
+    h += '</div>';
+    if (rev) h += '<div class="explain">' + why(q).map(esc).join('<br>') + '</div><div class="row" style="margin-top:12px"><button class="btn primary big" id="soloNext">' + (T.i + 1 >= SOLO_N ? 'Ver resultado' : 'Próxima pergunta') + ' <kbd style="font-size:12px">Enter</kbd></button><button class="btn" id="bigExplain">Explicar em tela cheia</button></div>';
+    else h += '<p class="muted" style="margin:12px 0 0;font-size:15px">Clique numa opção ou use <kbd style="font-size:12px">1</kbd>–<kbd style="font-size:12px">4</kbd>. Sem dicas no desafio.</p>';
+    h += '</div></div>';
+    app.innerHTML = h;
+    [].forEach.call(document.querySelectorAll('#soloOpts .opt'), function(b){ b.disabled = rev; b.addEventListener('click', function(){ soloAnswer(+b.dataset.i); }); });
+    if (rev) {
+      $('soloNext').addEventListener('click', soloNext);
+      $('bigExplain').addEventListener('click', function(){ Hints.modal({ tone:'good', kicker:'Explicação', title:'Resposta certa: ' + q.opts[q.correct], lines: why(q), svgs:[{ label:'Árvore da pergunta', svg: treeSVG(q.tree, 760) }], button:'Fechar' }); });
+      try { $('soloNext').focus({ preventScroll:true }); } catch (e) {}
+    } else soloTick();
+    return;
+  }
+  // fim
+  var byTopic = {}; T.log.forEach(function(l){ var k = l.topic || 'bst'; byTopic[k] = byTopic[k] || [0, 0]; byTopic[k][1]++; if (l.ok) byTopic[k][0]++; });
+  app.innerHTML = '<div class="card center"><h2>Desafio concluído</h2>' +
+    '<p style="font-size:48px;font-weight:800;margin:6px 0 0;color:var(--torch)">' + T.hits + ' de ' + SOLO_N + '</p><p class="muted" style="margin:0 0 6px">acertos</p>' +
+    '<p style="font-size:22px;margin:0">Tempo total de resposta: <b>' + Placar.fmtT(T.ms) + '</b>' + (T.newBest ? ' <span style="color:var(--moss);font-weight:700">· seu melhor resultado!</span>' : '') + '</p>' +
+    '<div class="chips" style="justify-content:center;margin:16px 0">' + Object.keys(byTopic).map(function(k){ return '<span class="chip">' + esc(TOPIC_NAMES[k] || k) + ': ' + byTopic[k][0] + '/' + byTopic[k][1] + '</span>'; }).join('') + '</div>' +
+    '<div class="sololog">' + T.log.map(function(l, i){ return '<div class="' + (l.ok ? 'ok' : 'no') + '"><b>' + (i + 1) + '</b><span>' + (l.ok ? '✓' : l.c < 0 ? '⏱' : '✗') + '</span><small>' + (l.t / 1000).toFixed(1).replace('.', ',') + ' s</small></div>'; }).join('') + '</div>' +
+    '<div class="row" style="justify-content:center;margin-top:16px"><button class="btn primary big" id="soloAgain">Novo desafio</button><button class="btn" id="soloRank">Ver ranking</button><button class="btn" id="soloBack">Voltar</button></div></div>';
+  $('soloAgain').addEventListener('click', newSolo);
+  $('soloRank').addEventListener('click', function(){ Placar.show('arena', { group: 'pontos' }); });
+  $('soloBack').addEventListener('click', function(){ T = null; render(); });
+}
+document.addEventListener('keydown', function(e){
+  if (!T || T.mode !== 'solo' || Hints.isOpen() || Placar.isOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  var k = e.key.toUpperCase(), i = '1234'.indexOf(k); if (i < 0) i = 'ABCD'.indexOf(k);
+  if (T.phase === 'question' && i >= 0) { e.preventDefault(); soloAnswer(i); }
+  else if (T.phase === 'reveal' && e.key === 'Enter' && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); soloNext(); }
+});
+
 function render(){
+  if (T && T.mode === 'solo') return renderSolo();
   if (T) return renderHost();
   if (roomReady && !isAdmin) return renderStudent();
   renderSetup();
@@ -445,8 +549,12 @@ function render(){
 function renderSetup(){
   var liveOK = roomReady && isAdmin;
   var nick = ''; try { nick = localStorage.getItem('arena-nick') || ''; } catch (e) {}
+  var sb = null; try { sb = JSON.parse(localStorage.getItem('masmorra-arena-melhor') || 'null'); } catch (e) {}
   app.innerHTML =
-    '<div class="card"><h2>Monte a partida</h2><p class="muted" style="margin:0 0 10px">Perguntas sorteadas a cada partida, com a árvore desenhada no telão.</p>' +
+    '<div class="card solo"><div><h2>Desafio individual</h2><p style="margin:0">Você responde sozinho a <b>' + SOLO_N + ' perguntas</b> de todos os assuntos. Cada acerto vale 1 ponto e, no empate, vence o menor tempo total de resposta. O resultado entra no ranking da Arena.</p>' +
+      (sb ? '<p class="muted" style="margin:6px 0 0;font-size:15px">Seu melhor neste aparelho: <b style="color:var(--ink)">' + sb.hits + ' de ' + SOLO_N + '</b> em ' + Placar.fmtT(sb.ms) + '.</p>' : '') + '</div>' +
+      '<div class="row"><button class="btn primary big" id="goSolo">Começar o desafio</button><button class="btn" id="soloRankBtn">Ranking da Arena</button></div></div>' +
+    '<div class="card" style="margin-top:14px"><h2>Monte a partida em sala</h2><p class="muted" style="margin:0 0 10px">Perguntas sorteadas a cada partida, com a árvore desenhada no telão.</p>' +
     '<div class="grid2"><div><div class="field"><span>Assuntos</span><div class="checks">' +
       Object.keys(TOPIC_NAMES).map(function(k){ return '<label><input type="checkbox" class="topic" value="' + k + '" checked> ' + TOPIC_NAMES[k] + '</label>'; }).join('') + '</div></div></div>' +
     '<div class="row"><label class="field"><span>Perguntas</span><select id="cfgN"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label>' +
@@ -461,6 +569,8 @@ function renderSetup(){
       '<button class="btn primary big" id="goTeams">Começar com equipes</button></div>' +
     '</div>';
   $('goTeams').addEventListener('click', function(){ newHost('teams'); });
+  $('goSolo').addEventListener('click', newSolo);
+  $('soloRankBtn').addEventListener('click', function(){ Placar.show('arena', { group: 'pontos' }); });
   if ($('goLive')) $('goLive').addEventListener('click', function(){ newHost('live'); });
   $('cfgT').addEventListener('change', function(){ var n = +this.value; [].forEach.call(document.querySelectorAll('.teamname'), function(el, i){ el.hidden = i >= n; }); });
 }
@@ -576,7 +686,7 @@ function renderStudent(){
 
 render();
 connectRoom();
-window.__arena = { get T(){ return T; }, get S(){ return S; }, GEN: GEN, makeQuiz: makeQuiz };
+window.__arena = { soloAnswer: function(c){ soloAnswer(c); }, soloNext: function(){ soloNext(); }, get T(){ return T; }, get S(){ return S; }, GEN: GEN, makeQuiz: makeQuiz };
 })();
 </script>
 </body>
